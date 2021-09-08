@@ -108,7 +108,7 @@ def spdx_create_tarball(d, srcdir, suffix, ar_outdir):
 
     filename = get_tar_name(d, suffix)
     tarname = os.path.join(ar_outdir, filename)
-    bb.warn('Creating %s' % tarname)
+    bb.note('Creating %s' % tarname)
     tar = tarfile.open(tarname, 'w:gz')
     tar.add(srcdir, arcname=os.path.basename(srcdir), filter=exclude_useless_paths)
     tar.close()
