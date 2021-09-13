@@ -84,9 +84,15 @@ python () {
         create_manifest(info,sstatefile)
         return
 
-    d.appendVarFlag('do_spdx', 'depends', ' %s:do_get_report' % pn)
-    bb.build.addtask('do_get_report', 'do_configure', 'do_patch' , d)
-    bb.build.addtask('do_spdx', 'do_configure', 'do_get_report', d)
+    def hasTask(task):
+        return bool(d.getVarFlag(task, "task", False)) and not bool(d.getVarFlag(task, "noexec", False))
+
+    if d.getVar('PACKAGES'):
+       # Some recipes do not have any packaging tasks
+       if hasTask("do_package_write_rpm") or hasTask("do_package_write_ipk") or hasTask("do_package_write_deb"):
+           d.appendVarFlag('do_spdx', 'depends', ' %s:do_get_report' % pn)
+           bb.build.addtask('do_get_report', 'do_configure', 'do_patch' , d)
+           bb.build.addtask('do_spdx', 'do_configure', 'do_get_report', d)
 }
 
 python do_get_report () {
@@ -336,7 +342,7 @@ def has_upload(d, tar_file, folder_id):
     bb.note("len of upload_output = ")
     bb.note(str(len(upload_output)))
     for i in range(0, len(upload_output)):
-        if upload_output[i]["uploadname"] == file_name:
+        if upload_output[i]["uploadname"] == file_name and str(upload_output[i]["folderid"]) == str(folder_id):
             bb.warn("Find " + file_name + " in fossology server. So, will not upload again.")
             return upload_output[i]["id"]
     return False

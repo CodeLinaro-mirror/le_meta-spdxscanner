@@ -1,18 +1,5 @@
 # This class supplys common functions.
 
-
-SPDXEPENDENCY += "${PATCHTOOL}-native:do_populate_sysroot"
-SPDXEPENDENCY += " wget-native:do_populate_sysroot"
-SPDXEPENDENCY += " subversion-native:do_populate_sysroot"
-SPDXEPENDENCY += " git-native:do_populate_sysroot"
-SPDXEPENDENCY += " lz4-native:do_populate_sysroot"
-SPDXEPENDENCY += " lzip-native:do_populate_sysroot"
-SPDXEPENDENCY += " xz-native:do_populate_sysroot"
-SPDXEPENDENCY += " unzip-native:do_populate_sysroot"
-SPDXEPENDENCY += " xz-native:do_populate_sysroot"
-SPDXEPENDENCY += " quilt-native:do_populate_sysroot"
-SPDXEPENDENCY += " tar-native:do_populate_sysroot"
-
 SPDX_DEPLOY_DIR ??= "${DEPLOY_DIR}/spdx"
 SPDX_TOPDIR ?= "${WORKDIR}/spdx_sstate_dir"
 SPDX_OUTDIR ?= "${SPDX_TOPDIR}/${TARGET_SYS}/${PF}/"
@@ -393,5 +380,4 @@ python do_spdx_creat_tarball(){
     bb.note("Creat tarball for  " + spdx_outdir)
     tar_file = spdx_create_tarball(d, d.getVar('WORKDIR'), 'patched', spdx_outdir)
 }
-do_spdx[depends] = "${SPDXEPENDENCY}"
 
