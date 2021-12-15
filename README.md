@@ -1,11 +1,13 @@
 # meta-spdxscanner
 
-meta-spdxscanner supports the following SPDX create tools.
-1. fossology python REST API
-2. fossology REST API (by curl)
-3. scancode-toolkit
+1.meta-spdxscanner supports the following SPDX create tools.
+- fossology python REST API
+- fossology REST API (by curl)
 
-# This layer supplys invoking scanners as following:
+2.meta-spdxscanner supports upload OSS source code to blackduck server by Synopsys Detect.
+- blackduck-upload.bbclass
+
+# DEPENDS 
 
 1. fossology-python.bbclass (https://github.com/fossology/fossology-python)
 - openembedded-core
@@ -17,7 +19,7 @@ meta-spdxscanner supports the following SPDX create tools.
 - openembedded-core
 - meta-oe/meta-python
 
-3. scancode-tk.bbclass (https://github.com/oss-review-toolkit/ort)
+3. blackduck-upload.bbclass
 - openembedded-core
 
 # How to use
@@ -56,16 +58,20 @@ Note
   Please reference to https://hub.docker.com/r/fossology/fossology/.
 - TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
 
-3.  scancode-tk.bbclass
+3.  blackduck-upload.bbclass
 - inherit the folowing class in your conf/local.conf for all of recipes or
   in some recipes which you want.
 
 ```
-  INHERIT += "scancode-tk"
-  SPDX_DEPLOY_DIR = "${DeployDir}" //Optional, by default, spdx files will be deployed to ${BUILD_DIR}/tmp/deploy/spdx/
+INHERIT += "blackduck-upload"
+BD_URI = "https://xxx.yyy.com/"
+PRO_NAME = "xxx"
+PRO_VER = "xxx"
+PROXY_HOST = "xxx"
+PROXY_PORT = "xxxx"
+PROXY_UN = "xxx"
+PROXY_PW = "xxxx"
+TOKEN = "NmJ..."
 
 ```
-Note
-- scancode-tk has to install on host development under python2. So, please make sure that python2 exists on your build server.
-- If you want to use scancode.bbclass, There is no need to install anything on your host.
 
