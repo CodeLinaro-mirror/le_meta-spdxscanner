@@ -20,8 +20,11 @@ inherit copyleft_filter
 inherit spdx-common 
 
 do_foss_upload[dirs] = "${SPDX_TOPDIR}"
+do_foss_upload[network] = "1"
 do_schedule_jobs[dirs] = "${SPDX_TOPDIR}"
+do_schedule_jobs[network] = "1"
 do_get_report[dirs] = "${SPDX_OUTDIR}"
+do_get_report[network] = "1"
 
 CREATOR_TOOL = "fossology-python.bbclass in meta-spdxscanner"
 FOSSOLOGY_SERVER ?= "http://127.0.0.1/repo"

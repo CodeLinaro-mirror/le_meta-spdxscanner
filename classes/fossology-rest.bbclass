@@ -27,6 +27,8 @@ CREATOR_TOOL = "fossology-rest.bbclass in meta-spdxscanner"
 
 NO_PROXY ?= "127.0.0.1"
 
+do_get_report[network] = "1"
+
 # If ${S} isn't actually the top-level source directory, set SPDX_S to point at
 # the real top-level directory.
 SPDX_S ?= "${S}"
@@ -396,7 +398,8 @@ def analysis(d, folder_id, upload_id):
     import subprocess
     delaytime = 50
     i = 0
-
+    
+    bb.note("Begin to analysis.")
     no_proxy = (d.getVar('NO_PROXY', True) or "")
     server_url = (d.getVar('FOSSOLOGY_SERVER', True) or "")
     if server_url == "":
@@ -447,6 +450,7 @@ def trigger(d, folder_id, upload_id):
     delaytime = 50
     i = 0
 
+    bb.note("Trigger to create spdx file.")
     no_proxy = (d.getVar('NO_PROXY', True) or "")
     server_url = (d.getVar('FOSSOLOGY_SERVER', True) or "")
     if server_url == "":
@@ -493,6 +497,7 @@ def get_spdx(d, report_id, spdx_file):
     complete = False
     i = 0
 
+    bb.note("Begin to download spdx file.")
     no_proxy = (d.getVar('NO_PROXY', True) or "")
     server_url = (d.getVar('FOSSOLOGY_SERVER', True) or "")
     if server_url == "":
