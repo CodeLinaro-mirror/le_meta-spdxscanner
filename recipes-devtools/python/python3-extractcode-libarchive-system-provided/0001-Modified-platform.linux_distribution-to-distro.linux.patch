@@ -1,0 +1,37 @@
+From 91ebfe2f619a65305d7f587bce0069255ae9adb3 Mon Sep 17 00:00:00 2001
+From: Lei Maohui <leimaohui@fujitsu.com>
+Date: Thu, 13 Jan 2022 17:57:56 +0900
+Subject: [PATCH] Modified platform.linux_distribution to
+ distro.linux_distribution
+
+platform.linux_distribution has been removed from python 3.5.
+
+Signed-off-by: Lei Maohui <leimaohui@fujitsu.com>
+---
+ src/extractcode_libarchive/__init__.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/extractcode_libarchive/__init__.py b/src/extractcode_libarchive/__init__.py
+index 4f040a1..98642ba 100755
+--- a/src/extractcode_libarchive/__init__.py
++++ b/src/extractcode_libarchive/__init__.py
+@@ -8,6 +8,7 @@
+ #
+ 
+ import platform
++import distro
+ from os import environ
+ from os import path
+ 
+@@ -26,7 +27,7 @@ class LibarchivePaths(LocationProviderPlugin):
+             system_arch = platform.machine()
+             mainstream_system = platform.system().lower()
+             if mainstream_system == 'linux':
+-                distribution = platform.linux_distribution()[0].lower()
++                distribution = distro.linux_distribution()[0].lower()
+                 debian_based_distro = ['ubuntu', 'mint', 'debian']
+                 rpm_based_distro = ['fedora', 'redhat']
+ 
+-- 
+2.25.1
+
