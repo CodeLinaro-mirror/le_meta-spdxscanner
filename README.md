@@ -19,14 +19,17 @@
 - openembedded-core
 - meta-oe/meta-python
 
-3. blackduck-upload.bbclass
+3. scancode-tk.bbclass
+- openembedded-core
+- meta-oe/meta-python
+
+4. blackduck-upload.bbclass
 - openembedded-core
 
 # How to use
 
 1.  fossology-python.bbclass
-- inherit the folowing class in your conf/local.conf for all of recipes or
-  in some recipes which you want.
+- inherit the folowing class in your conf/local.conf.
 
 ```
   INHERIT += "fossology-python"
@@ -43,8 +46,7 @@ Note
 - TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
 
 2.  fossology-rest.bbclass
-- inherit the folowing class in your conf/local.conf for all of recipes or
-  in some recipes which you want.
+- inherit the folowing class in your conf/local.conf.
 
 ```
   INHERIT += "fossology-rest"
@@ -58,9 +60,16 @@ Note
   Please reference to https://hub.docker.com/r/fossology/fossology/.
 - TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
 
-3.  blackduck-upload.bbclass
-- inherit the folowing class in your conf/local.conf for all of recipes or
-  in some recipes which you want.
+3.  scancode-tk.bbclass
+- inherit the folowing class in your conf/local.conf.
+
+```
+PREFERRED_VERSION_python3-pluggy-native = "0.13.1"
+INHERIT += "scancode-tk"
+```
+
+4.  blackduck-upload.bbclass
+- inherit the folowing class in your conf/local.conf for all of recipes.
 
 ```
 INHERIT += "blackduck-upload"
