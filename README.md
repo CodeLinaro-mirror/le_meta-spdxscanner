@@ -2,6 +2,7 @@
 
 1.meta-spdxscanner supports the following SPDX create tools.
 - fossology python REST API
+- scancode-tk
 - fossology REST API (by curl)
 
 2.meta-spdxscanner supports upload OSS source code to blackduck server by Synopsys Detect.
@@ -15,11 +16,11 @@
 - meta-oe/meta-oe
 - meta-oe/meta-webserver
 
-2. fossology-rest.bbclass
+2. scancode-tk.bbclass
 - openembedded-core
 - meta-oe/meta-python
 
-3. scancode-tk.bbclass
+3. fossology-rest.bbclass
 - openembedded-core
 - meta-oe/meta-python
 
@@ -27,6 +28,10 @@
 - openembedded-core
 
 # How to use
+
+Now, meta-spdxscanner provides three methods as following to create spdx files. Please select one to use.
+
+First, edit the conf/local.conf file, select one module to enable it.
 
 1.  fossology-python.bbclass
 - inherit the folowing class in your conf/local.conf.
@@ -40,12 +45,20 @@
   FOLDER_NAME = "xxxx" //Optional, by default, it is the top folder "Software Repository"(folderId=1).
   SPDX_DEPLOY_DIR = "${DeployDir}" //Optional, by default, spdx files will be deployed to ${BUILD_DIR}/tmp/deploy/spdx/
 ```
-Note
-- If you want to use fossology-python.bbclass, you have to make sure that fossology server on your host and make sure it works well.
-  Please reference to https://hub.docker.com/r/fossology/fossology/.
-- TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
+  Note
+  - If you want to use fossology-python.bbclass, you have to make sure that fossology server on your host and make sure it works well.
+    Please reference to https://hub.docker.com/r/fossology/fossology/.
+  - TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
 
-2.  fossology-rest.bbclass
+2.  scancode-tk.bbclass
+- inherit the folowing class in your conf/local.conf.
+
+```
+  PREFERRED_VERSION_python3-pluggy-native = "0.13.1"
+  INHERIT += "scancode-tk"
+```
+
+3.  fossology-rest.bbclass
 - inherit the folowing class in your conf/local.conf.
 
 ```
@@ -55,21 +68,30 @@ Note
   FOLDER_NAME = "xxxx" //Optional, by default, it is the top folder "Software Repository"(folderId=1).
   SPDX_DEPLOY_DIR = "${DeployDir}" //Optional, by default, spdx files will be deployed to ${BUILD_DIR}/tmp/deploy/spdx/ 
 ```
-Note
-- If you want to use fossology-rest.bbclass, you have to make sure that fossology server on your host and make sure it works well.
-  Please reference to https://hub.docker.com/r/fossology/fossology/.
-- TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
+  Note
+  - If you want to use fossology-rest.bbclass, you have to make sure that fossology server on your host and make sure it works well.
+    Please reference to https://hub.docker.com/r/fossology/fossology/.
+  - TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
 
-3.  scancode-tk.bbclass
-- inherit the folowing class in your conf/local.conf.
-
+Finished editing the conf/local.con file, you can get spdx files whatever your build by bitbake. For example:
+  - For what your build(e.g, openssl) and the dependences.
 ```
-PREFERRED_VERSION_python3-pluggy-native = "0.13.1"
-INHERIT += "scancode-tk"
+    $ bitbake openssl
+```
+  - Only get a spdx for one recipe(e.g, openssl_%.bb).
+```
+    $ bitbake openssl -f -c spdx
+```
+  - Only get spdx files for what will be built for a image file(e.g, core-image-minimal.bb) without building.
+```
+    $ bitbake --runall=spdx core-image-minimal
 ```
 
-4.  blackduck-upload.bbclass
-- inherit the folowing class in your conf/local.conf for all of recipes.
+If you has a blackduck server, you can use the following method to upload source code to the server.
+
+1. blackduck-upload.bbclass
+
+   First, edit the conf/local.conf file under build directory as following:
 
 ```
 INHERIT += "blackduck-upload"
@@ -82,5 +104,18 @@ PROXY_UN = "xxx"
 PROXY_PW = "xxxx"
 TOKEN = "NmJ..."
 
+```
+Finished editing the conf/local.con file, you can upload the source code of of recipe by bitbake. For example:
+  - For what your build(e.g, openssl) and the dependences.
+```
+    $ bitbake openssl
+```
+  - Only upload one OSS(e.g, openssl).
+```
+    $ bitbake openssl -f -c synopsys_detect
+```
+  - Only get spdx files for what will be built for a image file(e.g, core-image-minimal.bb) without compiling.
+```
+    $ bitbake --runall=synopsys_detect core-image-minimal
 ```
 
