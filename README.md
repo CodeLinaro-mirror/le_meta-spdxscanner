@@ -1,31 +1,31 @@
 # meta-spdxscanner
 
 1.meta-spdxscanner supports the following SPDX create tools.
-- fossology python REST API
-- scancode-tk
-- fossology REST API (by curl)
+  - fossology python REST API
+  - scancode-tk
+  - fossology REST API (by curl)
 
 2.meta-spdxscanner supports upload OSS source code to blackduck server by Synopsys Detect.
-- blackduck-upload.bbclass
+  - blackduck-upload.bbclass
 
 # DEPENDS 
 
 1. fossology-python.bbclass (https://github.com/fossology/fossology-python)
-- openembedded-core
-- meta-oe/meta-python
-- meta-oe/meta-oe
-- meta-oe/meta-webserver
+  - openembedded-core
+  - meta-oe/meta-python
+  - meta-oe/meta-oe
+  - meta-oe/meta-webserver
 
 2. scancode-tk.bbclass
-- openembedded-core
-- meta-oe/meta-python
+  - openembedded-core
+  - meta-oe/meta-python
 
 3. fossology-rest.bbclass
-- openembedded-core
-- meta-oe/meta-python
+  - openembedded-core
+  - meta-oe/meta-python
 
 4. blackduck-upload.bbclass
-- openembedded-core
+  - openembedded-core
 
 # How to use
 
