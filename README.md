@@ -1,4 +1,5 @@
-# meta-spdxscanner
+meta-spdxscanner
+================
 
 1.meta-spdxscanner supports the following SPDX create tools.
   - fossology python REST API
@@ -8,32 +9,44 @@
 2.meta-spdxscanner supports upload OSS source code to blackduck server by Synopsys Detect.
   - blackduck-upload.bbclass
 
-# DEPENDS 
+DEPENDS
+-----------------------
 
 1. fossology-python.bbclass (https://github.com/fossology/fossology-python)
+
   - openembedded-core
+
   - meta-oe/meta-python
+
   - meta-oe/meta-oe
+
   - meta-oe/meta-webserver
 
 2. scancode-tk.bbclass
+
   - openembedded-core
+
   - meta-oe/meta-python
 
 3. fossology-rest.bbclass
+
   - openembedded-core
+
   - meta-oe/meta-python
 
 4. blackduck-upload.bbclass
+
   - openembedded-core
 
-# How to use
+How to use
+-----------------------
 
 Now, meta-spdxscanner provides three methods as following to create spdx files. Please select one to use.
 
 First, edit the conf/local.conf file, select one module to enable it.
 
 1.  fossology-python.bbclass
+
 - inherit the folowing class in your conf/local.conf.
 
 ```
@@ -46,11 +59,14 @@ First, edit the conf/local.conf file, select one module to enable it.
   SPDX_DEPLOY_DIR = "${DeployDir}" //Optional, by default, spdx files will be deployed to ${BUILD_DIR}/tmp/deploy/spdx/
 ```
   Note
+
   - If you want to use fossology-python.bbclass, you have to make sure that fossology server on your host and make sure it works well.
     Please reference to https://hub.docker.com/r/fossology/fossology/.
+
   - TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
 
 2.  scancode-tk.bbclass
+
 - inherit the folowing class in your conf/local.conf.
 
 ```
@@ -59,7 +75,8 @@ First, edit the conf/local.conf file, select one module to enable it.
 ```
 
 3.  fossology-rest.bbclass
-- inherit the folowing class in your conf/local.conf.
+
+  - inherit the folowing class in your conf/local.conf.
 
 ```
   INHERIT += "fossology-rest"
@@ -69,8 +86,10 @@ First, edit the conf/local.conf file, select one module to enable it.
   SPDX_DEPLOY_DIR = "${DeployDir}" //Optional, by default, spdx files will be deployed to ${BUILD_DIR}/tmp/deploy/spdx/ 
 ```
   Note
+
   - If you want to use fossology-rest.bbclass, you have to make sure that fossology server on your host and make sure it works well.
     Please reference to https://hub.docker.com/r/fossology/fossology/.
+
   - TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
 
 Finished editing the conf/local.con file, you can get spdx files whatever your build by bitbake. For example:
@@ -119,3 +138,16 @@ Finished editing the conf/local.con file, you can upload the source code of of r
     $ bitbake --runall=synopsys_detect core-image-minimal
 ```
 
+Contributing
+------------
+
+To contribute to this layer you should submit the patches for review to the
+mailing list (yocto@lists.yoctoproject.org) or to maintainer directly.
+
+Mailing list:
+
+    yocto@lists.yoctoproject.org
+
+Layer maintainer:
+
+    leimaohui@fujitsu.com
