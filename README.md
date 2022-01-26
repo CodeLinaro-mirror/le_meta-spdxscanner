@@ -2,17 +2,25 @@ meta-spdxscanner
 ================
 
 1.meta-spdxscanner supports the following SPDX create tools.
+
   - fossology python REST API
+ 
   - scancode-tk
+ 
   - fossology REST API (by curl)
 
 2.meta-spdxscanner supports upload OSS source code to blackduck server by Synopsys Detect.
+
   - blackduck-upload.bbclass
 
 DEPENDS
 -----------------------
 
-1. fossology-python.bbclass (https://github.com/fossology/fossology-python)
+1. fossology-python.bbclass 
+
+  - [fossology server](https://hub.docker.com/r/fossology/fossology/)
+  
+  - [fossology-python](https://github.com/fossology/fossology-python)
 
   - openembedded-core
 
@@ -29,6 +37,8 @@ DEPENDS
   - meta-oe/meta-python
 
 3. fossology-rest.bbclass
+
+  - [fossology server](https://hub.docker.com/r/fossology/fossology/)
 
   - openembedded-core
 
@@ -67,7 +77,7 @@ First, edit the conf/local.conf file, select one module to enable it.
 
 2.  scancode-tk.bbclass
 
-- inherit the folowing class in your conf/local.conf.
+  - inherit the folowing class in your conf/local.conf.
 
 ```
   PREFERRED_VERSION_python3-pluggy-native = "0.13.1"
