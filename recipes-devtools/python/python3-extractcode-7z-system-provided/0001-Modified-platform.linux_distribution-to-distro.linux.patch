@@ -1,0 +1,37 @@
+From 368b1fbb88c0221817cc4c750117719b38b11bdc Mon Sep 17 00:00:00 2001
+From: Lei Maohui <leimaohui@fujitsu.com>
+Date: Fri, 14 Jan 2022 10:03:43 +0900
+Subject: [PATCH] Modified platform.linux_distribution to
+ distro.linux_distribution.
+
+platform.linux_distribution has been removed from python 3.5.
+
+Signed-off-by: Lei Maohui <leimaohui@fujitsu.com>
+---
+ src/extractcode_7z/__init__.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/extractcode_7z/__init__.py b/src/extractcode_7z/__init__.py
+index a34b370..05e118d 100755
+--- a/src/extractcode_7z/__init__.py
++++ b/src/extractcode_7z/__init__.py
+@@ -9,6 +9,7 @@
+ 
+ 
+ import platform
++import distro
+ from os import environ
+ from os import path
+ 
+@@ -28,7 +29,7 @@ class SevenzipPaths(LocationProviderPlugin):
+         if not lib_7z:
+             mainstream_system = platform.system().lower()
+             if mainstream_system == 'linux':
+-                distribution = platform.linux_distribution()[0].lower()
++                distribution = distro.linux_distribution()[0].lower()
+                 debian_based_distro = ['ubuntu', 'mint', 'debian']
+                 rpm_based_distro = ['fedora', 'redhat']
+ 
+-- 
+2.25.1
+

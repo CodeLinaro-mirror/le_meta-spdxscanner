@@ -380,4 +380,7 @@ python do_spdx_creat_tarball(){
     bb.note("Creat tarball for  " + spdx_outdir)
     tar_file = spdx_create_tarball(d, d.getVar('WORKDIR'), 'patched', spdx_outdir)
 }
-
+# For scancode-tk.bbclass, just 
+python do_spdx_get_src(){
+    spdx_get_src(d)
+}
