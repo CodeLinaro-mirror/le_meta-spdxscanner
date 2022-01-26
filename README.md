@@ -16,7 +16,7 @@ meta-spdxscanner
 DEPENDS
 -----------------------
 
-1. fossology-python.bbclass 
+1.fossology-python.bbclass 
 
   - [fossology server](https://hub.docker.com/r/fossology/fossology/)
   
@@ -30,13 +30,13 @@ DEPENDS
 
   - meta-oe/meta-webserver
 
-2. scancode-tk.bbclass
+2.scancode-tk.bbclass
 
   - openembedded-core
 
   - meta-oe/meta-python
 
-3. fossology-rest.bbclass
+3.fossology-rest.bbclass
 
   - [fossology server](https://hub.docker.com/r/fossology/fossology/)
 
@@ -44,7 +44,7 @@ DEPENDS
 
   - meta-oe/meta-python
 
-4. blackduck-upload.bbclass
+4.blackduck-upload.bbclass
 
   - openembedded-core
 
@@ -55,11 +55,11 @@ Now, meta-spdxscanner provides three methods as following to create spdx files. 
 
 First, edit the conf/local.conf file, select one module to enable it.
 
-1.  fossology-python.bbclass
-
-- inherit the folowing class in your conf/local.conf.
+1.fossology-python.bbclass
 
 ```
+  $ cat conf/local.conf
+  ...
   INHERIT += "fossology-python"
   TOKEN = "eyJ0eXAiO..."
   WAIT_TIME = "..." //Optional, by default, it is 0. If you run hundreds of do_spdx task, 
@@ -67,6 +67,7 @@ First, edit the conf/local.conf file, select one module to enable it.
   FOSSOLOGY_SERVER = "http://xx.xx.xx.xx:8081/repo" //Optional, by default, it is http://127.0.0.1:8081/repo
   FOLDER_NAME = "xxxx" //Optional, by default, it is the top folder "Software Repository"(folderId=1).
   SPDX_DEPLOY_DIR = "${DeployDir}" //Optional, by default, spdx files will be deployed to ${BUILD_DIR}/tmp/deploy/spdx/
+  ...
 ```
   Note
 
@@ -75,7 +76,7 @@ First, edit the conf/local.conf file, select one module to enable it.
 
   - TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
 
-2.  scancode-tk.bbclass
+2.scancode-tk.bbclass
 
   - inherit the folowing class in your conf/local.conf.
 
@@ -84,7 +85,7 @@ First, edit the conf/local.conf file, select one module to enable it.
   INHERIT += "scancode-tk"
 ```
 
-3.  fossology-rest.bbclass
+3.fossology-rest.bbclass
 
   - inherit the folowing class in your conf/local.conf.
 
@@ -118,7 +119,7 @@ Finished editing the conf/local.con file, you can get spdx files whatever your b
 
 If you has a blackduck server, you can use the following method to upload source code to the server.
 
-1. blackduck-upload.bbclass
+1.blackduck-upload.bbclass
 
    First, edit the conf/local.conf file under build directory as following:
 
