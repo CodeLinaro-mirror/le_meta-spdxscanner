@@ -16,7 +16,7 @@ meta-spdxscanner
 DEPENDS
 -----------------------
 
-1.fossology-python.bbclass 
+For fossology-python.bbclass 
 
   - [fossology server](https://hub.docker.com/r/fossology/fossology/)
   
@@ -30,13 +30,15 @@ DEPENDS
 
   - meta-oe/meta-webserver
 
-2.scancode-tk.bbclass
+
+For scancode-tk.bbclass
 
   - openembedded-core
 
   - meta-oe/meta-python
 
-3.fossology-rest.bbclass
+
+For fossology-rest.bbclass
 
   - [fossology server](https://hub.docker.com/r/fossology/fossology/)
 
@@ -44,9 +46,12 @@ DEPENDS
 
   - meta-oe/meta-python
 
-4.blackduck-upload.bbclass
+
+For blackduck-upload.bbclass
 
   - openembedded-core
+
+
 
 How to use
 -----------------------
