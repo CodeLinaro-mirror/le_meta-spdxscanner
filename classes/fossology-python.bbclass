@@ -434,7 +434,7 @@ python do_get_report(){
     while i < 20:
         i += 1
         try:
-            report = foss.download_report(report_id)
+            report, name = foss.download_report(report_id)
         except TryAgain:
             bb.warn("SPDX file is still not ready, try again.")
             time.sleep(wait_time)
@@ -446,10 +446,12 @@ python do_get_report(){
             bb.error("Fail to download report.")
             break
 
-    report = str(report).lstrip("('")
-    report = report.rstrip("')")
-    with open(spdx_file, "w+") as file:
-        file.write(report)
+    with open(spdx_file, "wb") as file:
+        written = file.write(report)
+        assert written == len(report)
+        logger.info(
+            f"Report written to file: report_name {name}  written to {spdx_file}"
+        )
     file.close()
     
     subprocess.call(r"sed -i -e 's#\\n#\n#g' %s" % spdx_file, shell=True)
