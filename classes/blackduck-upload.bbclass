@@ -17,6 +17,7 @@ inherit copyleft_filter
 inherit spdx-common 
 
 do_upload[dirs] = "${SPDX_TOPDIR}"
+do_bd_upload[network] = "1"
 
 WAIT_TIME ?= "20"
 
