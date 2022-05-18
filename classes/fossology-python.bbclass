@@ -198,8 +198,7 @@ def create_folder(d, foss, token, folder_name):
         create_folder_lock.release()
         if folder.name != folder_name:
             bb.error("Folder %s couldn't be created" % folder_name)
-    else:
-        return folder
+    return folder
 
 python do_schedule_jobs(){
     import os
@@ -434,7 +433,7 @@ python do_get_report(){
     while i < 20:
         i += 1
         try:
-            report, name = foss.download_report(report_id)
+            report, name = foss.download_report(report_id, wait_time=wait_time*2)
         except TryAgain:
             bb.warn("SPDX file is still not ready, try again.")
             time.sleep(wait_time)
