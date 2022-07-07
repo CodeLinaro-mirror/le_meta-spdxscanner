@@ -31,9 +31,15 @@ def excluded_package(d, pn):
             if p != pn:
                 pn = p
                 break
-    if d.getVar('BPN') in ['gcc', 'libgcc']:
-        #bb.debug(1, 'spdx: There is a bug in the scan of %s, skip it.' % pn)
+    # We just archive gcc-source for all the gcc related recipes
+    if d.getVar('BPN') in ['gcc', 'libgcc'] \
+            and not pn.startswith('gcc-source'):
+        bb.debug(1, 'archiver: %s is excluded, covered by gcc-source' % pn)
         return True
+    # TARGET_SYS in ARCHIVER_ARCH will break the stamp for gcc-source in multiconfig
+    if pn.startswith('gcc-source'):
+        d.setVar('ARCHIVER_ARCH', "allarch")
+
     # The following: do_fetch, do_unpack and do_patch tasks have been deleted,
     # so avoid archiving do_spdx here.
     # -native is for the host aka during the build
@@ -65,12 +71,6 @@ def get_tar_name(d, suffix):
     get the name of tarball
     """
 
-    # Make sure we are only creating a single tarball for gcc sources
-    #if (d.getVar('SRC_URI') == ""):
-    #    return
-    # For the kernel archive, srcdir may just be a link to the
-    # work-shared location. Use os.path.realpath to make sure
-    # that we archive the actual directory and not just the link.
     if suffix:
         filename = '%s-%s.tar.gz' % (d.getVar('PF'), suffix)
     else:
@@ -85,11 +85,9 @@ def spdx_create_tarball(d, srcdir, suffix, ar_outdir):
     import tarfile, shutil
 
     # Make sure we are only creating a single tarball for gcc sources
-    #if (d.getVar('SRC_URI') == ""):
-    #    return
-    # For the kernel archive, srcdir may just be a link to the
-    # work-shared location. Use os.path.realpath to make sure
-    # that we archive the actual directory and not just the link.
+    if (d.getVar('SRC_URI') == ""):
+        return
+
     srcdir = os.path.realpath(srcdir)
     bb.utils.mkdirhier(ar_outdir)
 
@@ -142,6 +140,12 @@ def spdx_get_src(d):
         bb.utils.mkdirhier(src_dir)
         if bb.data.inherits_class('kernel',d):
             share_src = d.getVar('STAGING_KERNEL_DIR')
+        if pn.startswith('gcc-source'):
+            gcc_source_path = d.getVar('TMPDIR') + "/work-shared"
+            gcc_pv = d.getVar('PV')
+            gcc_pr = d.getVar('PR') 
+            share_src = gcc_source_path + "/gcc-" + gcc_pv + "-" + gcc_pr + "/gcc-" + gcc_pv + "/"
+            bb.warn("lmh test *** gcc share_src = " + share_src)
         cmd_copy_share = "cp -rf " + share_src + "/* " + src_dir + "/"
         cmd_copy_kernel_result = os.popen(cmd_copy_share).read()
         bb.note("cmd_copy_kernel_result = " + cmd_copy_kernel_result)
