@@ -84,10 +84,6 @@ def spdx_create_tarball(d, srcdir, suffix, ar_outdir):
     """
     import tarfile, shutil
 
-    # Make sure we are only creating a single tarball for gcc sources
-    if (d.getVar('SRC_URI') == ""):
-        return
-
     srcdir = os.path.realpath(srcdir)
     bb.utils.mkdirhier(ar_outdir)
 
@@ -145,7 +141,6 @@ def spdx_get_src(d):
             gcc_pv = d.getVar('PV')
             gcc_pr = d.getVar('PR') 
             share_src = gcc_source_path + "/gcc-" + gcc_pv + "-" + gcc_pr + "/gcc-" + gcc_pv + "/"
-            bb.warn("lmh test *** gcc share_src = " + share_src)
         cmd_copy_share = "cp -rf " + share_src + "/* " + src_dir + "/"
         cmd_copy_kernel_result = os.popen(cmd_copy_share).read()
         bb.note("cmd_copy_kernel_result = " + cmd_copy_kernel_result)

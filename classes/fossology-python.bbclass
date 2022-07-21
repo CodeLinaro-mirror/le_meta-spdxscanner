@@ -37,11 +37,11 @@ python () {
 
     create_folder_lock = Lock()
 
+    pn = d.getVar('PN')
     #If not for target, won't creat spdx.
-    if bb.data.inherits_class('nopackages', d):
+    if bb.data.inherits_class('nopackages', d) and not pn.startswith('gcc-source'):
         return
 
-    pn = d.getVar('PN')
     assume_provided = (d.getVar("ASSUME_PROVIDED") or "").split()
     if pn in assume_provided:
         for p in d.getVar("PROVIDES").split():
@@ -61,8 +61,9 @@ python () {
         return
 
     # We just archive gcc-source for all the gcc related recipes
-    if d.getVar('BPN') in ['gcc', 'libgcc']:
-        bb.debug(1, 'spdx: There is bug in scan of %s is, do nothing' % pn)
+    if d.getVar('BPN') in ['gcc', 'libgcc'] \
+            and not pn.startswith('gcc-source'):
+        bb.debug(1, 'archiver: %s is excluded, covered by gcc-source' % pn)
         return
 
     spdx_outdir = d.getVar('SPDX_OUTDIR')
@@ -206,8 +207,9 @@ python do_schedule_jobs(){
     import time
     import logging
 
+    pn = d.getVar( 'PN')
     #If not for target, won't creat spdx.
-    if bb.data.inherits_class('nopackages', d):
+    if bb.data.inherits_class('nopackages', d) and not pn.startswith('gcc-source'):
         return
 
     logger = logging.getLogger()
@@ -244,7 +246,6 @@ python do_schedule_jobs(){
     fossology_server = d.getVar('FOSSOLOGY_SERVER')
     token = d.getVar('TOKEN')
     foss = Fossology(fossology_server, token, "fossy")
-    pn = d.getVar('PN')
 
     if d.getVar('FOLDER_NAME', False):
         folder_name = d.getVar('FOLDER_NAME')
@@ -348,8 +349,9 @@ python do_get_report(){
     report_id = None
     report = None
 
+    pn = d.getVar('PN')
     #If not for target, won't creat spdx.
-    if bb.data.inherits_class('nopackages', d):
+    if bb.data.inherits_class('nopackages', d) and not pn.startswith('gcc-source'):
         return
 
     logger = logging.getLogger()
@@ -361,7 +363,6 @@ python do_get_report(){
     fossology_server = d.getVar('FOSSOLOGY_SERVER')
     token = d.getVar('TOKEN')
     foss = Fossology(fossology_server, token, "fossy")
-    pn = d.getVar('PN')
 
     if d.getVar('FOLDER_NAME', False):
         folder_name = d.getVar('FOLDER_NAME')
