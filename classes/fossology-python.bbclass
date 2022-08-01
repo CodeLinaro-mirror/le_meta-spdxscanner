@@ -89,9 +89,9 @@ python () {
     def hasTask(task):
         return bool(d.getVarFlag(task, "task", False)) and not bool(d.getVarFlag(task, "noexec", False))
     
-    if d.getVar('PACKAGES'):
+    if d.getVar('PACKAGES') or pn.startswith('gcc-source'):
        # Some recipes do not have any packaging tasks
-       if hasTask("do_package_write_rpm") or hasTask("do_package_write_ipk") or hasTask("do_package_write_deb"):
+       if hasTask("do_package_write_rpm") or hasTask("do_package_write_ipk") or hasTask("do_package_write_deb") or pn.startswith('gcc-source'):
            d.appendVarFlag('do_foss_upload', 'depends', ' %s:do_spdx_creat_tarball' % pn)
            d.appendVarFlag('do_schedule_jobs', 'depends', ' %s:do_foss_upload' % pn)
            d.appendVarFlag('do_get_report', 'depends', ' %s:do_schedule_jobs' % pn)

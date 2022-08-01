@@ -22,9 +22,9 @@ do_bd_upload[network] = "1"
 WAIT_TIME ?= "20"
 
 python () {
-
+    pn = d.getVar('PN')
     #If not for target, won't creat spdx.
-    if bb.data.inherits_class('nopackages', d):
+    if bb.data.inherits_class('nopackages', d) and not pn.startswith('gcc-source'):
         return
 
     pn = d.getVar('PN')
@@ -47,7 +47,8 @@ python () {
         return
 
     # We just archive gcc-source for all the gcc related recipes
-    if d.getVar('BPN') in ['gcc', 'libgcc']:
+    if d.getVar('BPN') in ['gcc', 'libgcc'] \
+        and not pn.startswith('gcc-source'):
         bb.debug(1, 'spdx: There is bug in scan of %s is, do nothing' % pn)
         return
 
@@ -65,9 +66,9 @@ python () {
     def hasTask(task):
         return bool(d.getVarFlag(task, "task", False)) and not bool(d.getVarFlag(task, "noexec", False))
     
-    if d.getVar('PACKAGES'):
+    if d.getVar('PACKAGES') or pn.startswith('gcc-source'):
         # Some recipes do not have any packaging tasks
-        if hasTask("do_package_write_rpm") or hasTask("do_package_write_ipk") or hasTask("do_package_write_deb"):
+        if hasTask("do_package_write_rpm") or hasTask("do_package_write_ipk") or hasTask("do_package_write_deb") or pn.startswith('gcc-source'):
             d.appendVarFlag('do_bd_upload', 'depends', ' synopsys-native:do_populate_sysroot')
             d.appendVarFlag('do_bd_upload', 'depends', ' %s:do_spdx_creat_tarball' % pn)
             d.appendVarFlag('do_synopsys_detect', 'depends', ' %s:do_bd_upload' % pn)
@@ -78,7 +79,9 @@ python () {
 python do_bd_upload(){
     import logging, shutil,time
 
-    if bb.data.inherits_class('nopackages', d):
+    pn = d.getVar( 'PN')
+    #If not for target, won't creat spdx.
+    if bb.data.inherits_class('nopackages', d) and not pn.startswith('gcc-source'):
         return
 
     logger = logging.getLogger()
@@ -170,7 +173,7 @@ do_synopsys_detect () {
     echo "Upload OSS to blackduck server."
 }
 addtask do_spdx_creat_tarball after do_patch
-addtask do_bd_upload after do_patch
+addtask do_bd_upload after do_spdx_creat_tarball
 addtask do_synopsys_detect
 do_build[recrdeptask] += "do_synopsys_detect"
 do_populate_sdk[recrdeptask] += "do_synopsys_detect"
