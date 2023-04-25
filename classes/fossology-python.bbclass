@@ -71,13 +71,15 @@ python () {
     info = {}
     info['pn'] = (d.getVar( 'PN') or "")
     info['pv'] = (d.getVar( 'PV') or "")
+    info['pr'] = (d.getVar( 'PR') or "")
+    spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
 
     manifest_dir = (d.getVar('SPDX_DEPLOY_DIR') or "")
     if not os.path.exists( manifest_dir ):
         bb.utils.mkdirhier( manifest_dir )
 
-    info['outfile'] = os.path.join(manifest_dir, info['pn'] + "-" + info['pv'] + ".spdx" )
-    sstatefile = os.path.join(spdx_outdir, info['pn'] + "-" + info['pv'] + ".spdx" )
+    info['outfile'] = os.path.join(manifest_dir, spdx_name )
+    sstatefile = os.path.join(spdx_outdir, spdx_name )
     if os.path.exists(info['outfile']):
         bb.note(info['pn'] + "spdx file has been exist, do nothing")
         return
@@ -227,14 +229,17 @@ python do_schedule_jobs(){
     info['workdir'] = (d.getVar('WORKDIR') or "")
     info['pn'] = (d.getVar( 'PN') or "")
     info['pv'] = (d.getVar( 'PV') or "")
+    info['pr'] = (d.getVar( 'PR') or "")
+    spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
+
 
     manifest_dir = (d.getVar('SPDX_DEPLOY_DIR') or "")
     if not os.path.exists( manifest_dir ):
         bb.utils.mkdirhier( manifest_dir )
 
     spdx_outdir = d.getVar('SPDX_OUTDIR')
-    info['outfile'] = os.path.join(manifest_dir, info['pn'] + "-" + info['pv'] + ".spdx" )
-    sstatefile = os.path.join(spdx_outdir, info['pn'] + "-" + info['pv'] + ".spdx" )
+    info['outfile'] = os.path.join(manifest_dir, spdx_name )
+    sstatefile = os.path.join(spdx_outdir, spdx_name)
     if os.path.exists(info['outfile']):
         bb.note(info['pn'] + "spdx file has been exist, do nothing")
         return
@@ -383,12 +388,15 @@ python do_get_report(){
     info['workdir'] = (d.getVar('WORKDIR') or "")
     info['pn'] = (d.getVar( 'PN') or "")
     info['pv'] = (d.getVar( 'PV') or "")
+    info['pr'] = (d.getVar( 'PR') or "")
+    spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
+
     info['package_download_location'] = (d.getVar( 'SRC_URI') or "")
     if info['package_download_location'] != "":
         info['package_download_location'] = info['package_download_location'].split()[0]
     info['spdx_version'] = (d.getVar('SPDX_VERSION') or '')
-    info['outfile'] = os.path.join(manifest_dir, info['pn'] + "-" + info['pv'] + ".spdx" )
-    spdx_file = os.path.join(spdx_outdir, info['pn'] + "-" + info['pv'] + ".spdx" )
+    info['outfile'] = os.path.join(manifest_dir, spdx_name )
+    spdx_file = os.path.join(spdx_outdir, spdx_name )
     if os.path.exists(info['outfile']):
         bb.note(info['pn'] + "spdx file has been exist, do nothing")
         return
