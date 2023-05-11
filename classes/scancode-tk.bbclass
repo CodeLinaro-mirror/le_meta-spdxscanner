@@ -56,7 +56,7 @@ python () {
 
     info = {}
     info['pn'] = (d.getVar( 'PN') or "")
-    info['pv'] = (d.getVar( 'PV') or "")
+    info['pv'] = (d.getVar( 'PV') or "").replace('-', '+')
 
     manifest_dir = (d.getVar('SPDX_DEPLOY_DIR') or "")
     if not os.path.exists( manifest_dir ):
@@ -112,7 +112,7 @@ python do_get_report(){
     info = {}
     info['workdir'] = (d.getVar('WORKDIR') or "")
     info['pn'] = (d.getVar( 'PN') or "")
-    info['pv'] = (d.getVar( 'PV') or "")
+    info['pv'] = (d.getVar( 'PV') or "").replace('-', '+')
     info['package_download_location'] = (d.getVar( 'SRC_URI') or "")
     if info['package_download_location'] != "":
         info['package_download_location'] = info['package_download_location'].split()[0]

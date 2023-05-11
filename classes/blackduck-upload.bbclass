@@ -54,11 +54,6 @@ python () {
 
     temp_dir = os.path.join(d.getVar('WORKDIR'), "temp")
 
-    info = {}
-    info['workdir'] = d.getVar('WORKDIR') or ""
-    info['pn'] = d.getVar( 'PN') or ""
-    info['pv'] = d.getVar( 'PV') or ""
-
     manifest_dir = d.getVar('SPDX_DEPLOY_DIR') or ""
     if not os.path.exists( manifest_dir ):
         bb.utils.mkdirhier( manifest_dir )
@@ -87,10 +82,6 @@ python do_bd_upload(){
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     logging.basicConfig(level=logging.INFO)
-
-    info = {}
-    info['pn'] = d.getVar( 'PN') or ""
-    info['pv'] = d.getVar( 'PV') or ""
 
     token = d.getVar('TOKEN')
     spdx_outdir = d.getVar('SPDX_OUTDIR')

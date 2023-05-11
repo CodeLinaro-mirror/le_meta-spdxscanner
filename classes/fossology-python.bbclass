@@ -70,7 +70,7 @@ python () {
 
     info = {}
     info['pn'] = (d.getVar( 'PN') or "")
-    info['pv'] = (d.getVar( 'PV') or "")
+    info['pv'] = (d.getVar( 'PV') or "").replace('-', '+')
     info['pr'] = (d.getVar( 'PR') or "")
     spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
 
@@ -228,7 +228,7 @@ python do_schedule_jobs(){
     info = {}
     info['workdir'] = (d.getVar('WORKDIR') or "")
     info['pn'] = (d.getVar( 'PN') or "")
-    info['pv'] = (d.getVar( 'PV') or "")
+    info['pv'] = (d.getVar( 'PV') or "").replace('-', '+')
     info['pr'] = (d.getVar( 'PR') or "")
     spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
 
@@ -387,7 +387,7 @@ python do_get_report(){
     info = {}
     info['workdir'] = (d.getVar('WORKDIR') or "")
     info['pn'] = (d.getVar( 'PN') or "")
-    info['pv'] = (d.getVar( 'PV') or "")
+    info['pv'] = (d.getVar( 'PV') or "").replace('-', '+')
     info['pr'] = (d.getVar( 'PR') or "")
     spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
 
