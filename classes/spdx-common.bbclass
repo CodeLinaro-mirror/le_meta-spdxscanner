@@ -94,6 +94,19 @@ def spdx_create_tarball(d, srcdir, suffix, ar_outdir):
     tar.add(srcdir, arcname=os.path.basename(srcdir), filter=exclude_useless_paths)
     tar.close()
     shutil.rmtree(srcdir)
+ 
+    info = {}
+    info['pn'] = (d.getVar( 'PN') or "")
+    info['pv'] = (d.getVar( 'PKGV') or "")
+    info['pr'] = (d.getVar( 'PR') or "")
+
+    if d.getVar('SAVE_SPDX_ACHIVE'):
+        manifest_dir = (d.getVar('SPDX_DEPLOY_DIR') or "")
+        if not os.path.exists( manifest_dir ):
+            bb.utils.mkdirhier( manifest_dir )
+        info['outfile'] = os.path.join(manifest_dir, filename)
+        create_manifest(info,tarname)
+ 
     return tarname
 
 def get_tarball_name(d, srcdir, suffix, ar_outdir):

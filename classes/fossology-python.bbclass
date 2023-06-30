@@ -66,17 +66,35 @@ python () {
         bb.debug(1, 'archiver: %s is excluded, covered by gcc-source' % pn)
         return
 
-    spdx_outdir = d.getVar('SPDX_OUTDIR')
-
-    info = {}
-    info['pn'] = (d.getVar( 'PN') or "")
-    info['pv'] = (d.getVar( 'PV') or "").replace('-', '+')
-    info['pr'] = (d.getVar( 'PR') or "")
-    spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
+    def hasTask(task):
+        return bool(d.getVarFlag(task, "task", False)) and not bool(d.getVarFlag(task, "noexec", False))
 
     manifest_dir = (d.getVar('SPDX_DEPLOY_DIR') or "")
     if not os.path.exists( manifest_dir ):
         bb.utils.mkdirhier( manifest_dir )
+
+    info = {}
+    info['pn'] = (d.getVar( 'PN') or "")
+    info['pv'] = (d.getVar( 'PKGV') or "").replace('-', '+')
+    info['pr'] = (d.getVar( 'PR') or "")
+    
+    if (d.getVar('BPN') == "perf"):
+        info['pv'] = d.getVar("KERNEL_VERSION").split("-")[0]
+
+    if 'AUTOINC' in info['pv']:
+        info['pv'] = info['pv'].replace("AUTOINC", "0")
+
+    if d.getVar('SAVE_SPDX_ACHIVE'): 
+        if d.getVar('PACKAGES') or pn.startswith('gcc-source'):
+           # Some recipes do not have any packaging tasks
+           if hasTask("do_package_write_rpm") or hasTask("do_package_write_ipk") or hasTask("do_package_write_deb") or pn.startswith('gcc-source'):
+               d.appendVarFlag('do_spdx', 'depends', ' %s:do_spdx_creat_tarball' % pn)
+
+    spdx_outdir = d.getVar('SPDX_OUTDIR')
+    if pn.startswith('gcc-source'):
+        spdx_name = "gcc-" + info['pv'] + "-" + info['pr'] + ".spdx"
+    else:
+        spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
 
     info['outfile'] = os.path.join(manifest_dir, spdx_name )
     sstatefile = os.path.join(spdx_outdir, spdx_name )
@@ -87,9 +105,6 @@ python () {
         bb.note(info['pn'] + "spdx file has been exist, do nothing")
         create_manifest(info,sstatefile)
         return
-
-    def hasTask(task):
-        return bool(d.getVarFlag(task, "task", False)) and not bool(d.getVarFlag(task, "noexec", False))
     
     if d.getVar('PACKAGES') or pn.startswith('gcc-source'):
        # Some recipes do not have any packaging tasks
@@ -140,8 +155,18 @@ python do_foss_upload(){
         bb.warn(pn + " has already been uploaded, don't upload again.")
 }
 def get_upload(d, folder, foss):
+    from fossology.exceptions import FossologyApiError
+
     filename = get_upload_file_name(d)
-    upload_list, _ = foss.list_uploads(page_size=1, all_pages=True)
+    try:
+        upload_list, _ = foss.list_uploads(page_size=1, all_pages=True)
+    except FossologyApiError as error:
+        time.sleep(10)
+        try:
+            upload_list, _ = foss.list_uploads(page_size=1, all_pages=True)
+        except FossologyApiError as error:
+            bb.error(error.message)
+
     upload = None
     bb.note("Check tarball: %s ,has been uploaded?" % filename)
     for upload in upload_list:
@@ -228,10 +253,17 @@ python do_schedule_jobs(){
     info = {}
     info['workdir'] = (d.getVar('WORKDIR') or "")
     info['pn'] = (d.getVar( 'PN') or "")
-    info['pv'] = (d.getVar( 'PV') or "").replace('-', '+')
+    info['pv'] = (d.getVar( 'PKGV') or "").replace('-', '+')
     info['pr'] = (d.getVar( 'PR') or "")
-    spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
+    if (d.getVar('BPN') == "perf"):
+        info['pv'] = d.getVar("KERNEL_VERSION").split("-")[0]
+    if 'AUTOINC' in info['pv']:
+        info['pv'] = info['pv'].replace("AUTOINC", "0")
 
+    if pn.startswith('gcc-source'):
+        spdx_name = "gcc-" + info['pv'] + "-" + info['pr'] + ".spdx"
+    else:
+        spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
 
     manifest_dir = (d.getVar('SPDX_DEPLOY_DIR') or "")
     if not os.path.exists( manifest_dir ):
@@ -385,11 +417,20 @@ python do_get_report(){
 
     cur_ver_code = get_ver_code(spdx_workdir).split()[0]
     info = {}
+    
     info['workdir'] = (d.getVar('WORKDIR') or "")
     info['pn'] = (d.getVar( 'PN') or "")
-    info['pv'] = (d.getVar( 'PV') or "").replace('-', '+')
+    info['pv'] = (d.getVar( 'PKGV') or "").replace('-', '+')
     info['pr'] = (d.getVar( 'PR') or "")
-    spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
+    if (d.getVar('BPN') == "perf"):
+        info['pv'] = d.getVar("KERNEL_VERSION").split("-")[0]
+    if 'AUTOINC' in info['pv']:
+        info['pv'] = info['pv'].replace("AUTOINC", "0")
+
+    if pn.startswith('gcc-source'):
+        spdx_name = "gcc-" + info['pv'] + "-" + info['pr'] + ".spdx"
+    else:
+        spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
 
     info['package_download_location'] = (d.getVar( 'SRC_URI') or "")
     if info['package_download_location'] != "":
