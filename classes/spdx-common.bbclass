@@ -260,12 +260,18 @@ def find_infoinlicensefile(sstatefile):
 ## Add necessary information into spdx file
 def write_cached_spdx( info,sstatefile, ver_code ):
     import subprocess
+    import re
 
     infoinlicensefile=""
 
     def sed_replace(dest_sed_cmd,key_word,replace_info):
         dest_sed_cmd = dest_sed_cmd + "-e 's#^" + key_word + ".*#" + \
             key_word + replace_info + "#' "
+        return dest_sed_cmd
+
+    def sed_replace_aline(dest_sed_cmd,origin_line,dest_line):
+        dest_sed_cmd = dest_sed_cmd + "-e 's#^" + origin_line + ".*#" + \
+            dest_line + "#' "
         return dest_sed_cmd
 
     def sed_insert(dest_sed_cmd,key_word,new_line):
@@ -291,6 +297,8 @@ def write_cached_spdx( info,sstatefile, ver_code ):
 
     ## Package level information
     sed_cmd = sed_replace(sed_cmd, "PackageName: ", info['pn'])
+    sed_cmd = sed_replace_aline(sed_cmd, "SPDXID: SPDXRef-upload", "SPDXID: SPDXRef-" + info['pkg_spdx_id'])
+    sed_cmd = sed_replace(sed_cmd, "Relationship: SPDXRef-DOCUMENT DESCRIBES SPDXRef-", info['pkg_spdx_id'])
     sed_cmd = sed_insert(sed_cmd, "PackageName: ", "PackageVersion: " + info['pv'])
     sed_cmd = sed_replace(sed_cmd, "PackageDownloadLocation: ",info['package_download_location'])
     sed_cmd = sed_insert(sed_cmd, "PackageDownloadLocation: ", "PackageHomePage: " + info['package_homepage'])
@@ -303,6 +311,13 @@ def write_cached_spdx( info,sstatefile, ver_code ):
         sed_cmd = sed_insert(sed_cmd, "PackageComment:"," \\n\\n## Relationships\\nRelationship: " + info['pn'] + " CONTAINS " + contain)
     for static_link in info['package_static_link'].split( ):
         sed_cmd = sed_insert(sed_cmd, "PackageComment:"," \\n\\n## Relationships\\nRelationship: " + info['pn'] + " STATIC_LINK " + static_link)
+    sed_cmd = sed_insert(sed_cmd, "PackageVerificationCode: ", "BuiltDate: " + info['build_time'])
+    sed_cmd = sed_insert(sed_cmd, "PackageVerificationCode: ", "ReleaseDate: " + info['release_date'])
+    sed_cmd = sed_insert(sed_cmd, "PackageVerificationCode: ", "PrimaryPackagePurpose: " + info['purpose'])
+    depends = info['depends_on']
+    for depend in re.split(r'\s*[,\s\n\r]\s*', depends):
+        sed_cmd = sed_insert(sed_cmd, "Relationship: ", "Relationship: SPDXRef-" + info['pn'] + " DEPENDS_ON SPDXRef-" + depend)
+    bb.note("sed_cmd = " + sed_cmd)
     sed_cmd = sed_cmd + sstatefile
     subprocess.call("%s" % sed_cmd, shell=True)
     
@@ -313,6 +328,9 @@ def write_cached_spdx( info,sstatefile, ver_code ):
         sed_cmd = sed_insert(sed_cmd, "ModificationRecord: ", oneline_infoinlicensefile)
         sed_cmd = sed_cmd + sstatefile
         subprocess.call("%s" % sed_cmd, shell=True)
+    
+    with open(sstatefile, encoding="utf-8", mode="a") as file:
+        file.write(info['external_refs'])
 
 def is_work_shared(d):
     pn = d.getVar('PN')
@@ -396,3 +414,89 @@ python do_spdx_creat_tarball(){
 python do_spdx_get_src(){
     spdx_get_src(d)
 }
+
+#For SPDX2.3
+def get_external_refs(d):
+    from oe.cve_check import get_patched_cves
+    external_refs = "##------------------------- \n"
+    external_refs += "## Security Information \n"
+    external_refs += "##------------------------- \n"
+    external_refs += "\"externalRefs\" : ["
+    unpatched_cves = []
+    nvd_link = "https://nvd.nist.gov/vuln/detail/"
+    with bb.utils.fileslocked([d.getVar("CVE_CHECK_DB_FILE_LOCK")], shared=True):
+        if os.path.exists(d.getVar("CVE_CHECK_DB_FILE")):
+            try:
+                patched_cves = get_patched_cves(d)
+            except FileNotFoundError:
+                bb.fatal("Failure in searching patches")
+            ignored, patched, unpatched, status = check_cves(d, patched_cves)
+            if patched or unpatched or (d.getVar("CVE_CHECK_COVERAGE") == "1" and status):
+                cve_data = get_cve_info(d, patched + unpatched + ignored)
+                #cve_write_data(d, patched, unpatched, ignored, cve_data, status)
+        else:
+            bb.note("No CVE database found, skipping CVE check")
+            return " "
+    if not patched+unpatched+ignored:
+        return " "
+
+    for cve in sorted(cve_data):
+        is_patched = cve in patched
+        is_ignored = cve in ignored
+
+        status = "unpatched"
+        if is_ignored:
+            status = "ignored"
+        elif is_patched:
+            status = "fix"
+        else:
+            # default value of status is Unpatched
+            unpatched_cves.append(cve)
+        external_refs += "{\n"
+        external_refs += "\"referenceCategory\" : \"SECURITY\",\n"
+        external_refs += "\"referenceLocator\" : \"https://nvd.nist.gov/vuln/detail/%s\",\n" % cve
+        external_refs += "\"referenceType\" : \"%s\"\n" % status
+        external_refs += "},"
+
+    external_refs += "]"
+    #bb.warn("external_refs  = " + external_refs) 
+    return external_refs
+
+def get_pkgpurpose(d):
+    section = d.getVar("SECTION")
+    if section in "libs":
+        return "LIBRARY"
+    else:
+        return "APPLICATION "
+
+def get_build_date(d):
+    from datetime import datetime, timezone
+
+    build_time = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    #bb.warn("time zone = " + build_time)
+    return build_time
+
+def get_depends_on(d):
+    import re
+
+    depends = re.split(r'\s*[\s]\s*',d.getVar("DEPENDS"))
+    depends_spdx = ""
+    for depend in depends:
+        bb.note("depend = " + depend)
+        if depend.endswith("-native"):
+            bb.note("Don't show *-native in depends relationship.\n")
+        else:
+            depends_spdx += depend + ","
+    depends_spdx = depends_spdx.strip(',')
+    bb.note("depends_spdx = " + depends_spdx)
+    return depends_spdx
+
+
+def get_spdxid_pkg(d):
+    if d.getVar("PROVIDES"):
+        pid = d.getVar("PROVIDES")
+    else:
+        pid = d.getVar("PN")
+    bb.note("SPDX ID of pkg = " + pid)
+    return pid
+

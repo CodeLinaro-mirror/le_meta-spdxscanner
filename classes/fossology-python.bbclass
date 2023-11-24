@@ -456,6 +456,12 @@ python do_get_report(){
     info['package_contains'] = (d.getVar('CONTAINED') or "")
     info['package_static_link'] = (d.getVar('STATIC_LINK') or "")
     info['modified'] = "false"
+    info['external_refs'] = get_external_refs(d)
+    info['purpose'] = get_pkgpurpose(d)
+    info['release_date'] = (d.getVar('REALASE_DATE') or "")
+    info['build_time'] = get_build_date(d)
+    info['depends_on'] = get_depends_on(d)
+    info['pkg_spdx_id'] = get_spdxid_pkg(d)
     srcuri = d.getVar("SRC_URI", False).split()
     length = len("file://")
     for item in srcuri:
@@ -547,4 +553,4 @@ addtask do_get_report after do_schedule_jobs
 addtask do_spdx
 do_build[recrdeptask] += "do_spdx"
 do_populate_sdk[recrdeptask] += "do_spdx"
-
+do_get_report[depends] = "cve-update-nvd2-native:do_fetch"
