@@ -240,9 +240,15 @@ def find_infoinlicensefile(sstatefile):
                 continue
             license = line_spdx.split(": ")[1]
             license = license.split("\n")[0]
+            bb.note("file path = " + file_path)
             file_path = file_path.split("\n")[0]
+            bb.note("file path = " + file_path)
             path_list = file_path.split('/')
-            if len(file_path.split('/')) < 5:
+            if len(file_path.split('/')) < 3:
+                file_path_simple = file_path.split('/',1)[1]
+            elif len(file_path.split('/')) < 4:
+                file_path_simple = file_path.split('/',2)[2]
+            elif len(file_path.split('/')) < 5:
                 file_path_simple = file_path.split('/',3)[3]
             else:
                 file_path_simple = file_path.split('/',4)[4]
@@ -316,7 +322,7 @@ def write_cached_spdx( info,sstatefile, ver_code ):
     sed_cmd = sed_insert(sed_cmd, "PackageVerificationCode: ", "PrimaryPackagePurpose: " + info['purpose'])
     depends = info['depends_on']
     for depend in re.split(r'\s*[,\s\n\r]\s*', depends):
-        sed_cmd = sed_insert(sed_cmd, "Relationship: ", "Relationship: SPDXRef-" + info['pn'] + " DEPENDS_ON SPDXRef-" + depend)
+        sed_cmd = sed_insert(sed_cmd, "PackageCopyrightText: ", "Relationship: SPDXRef-" + info['pn'] + " DEPENDS_ON SPDXRef-" + depend)
     bb.note("sed_cmd = " + sed_cmd)
     sed_cmd = sed_cmd + sstatefile
     subprocess.call("%s" % sed_cmd, shell=True)
@@ -383,7 +389,7 @@ def get_ver_code(dirname):
         try:
             stats = os.stat(os.path.join(dirname,f_dir,f))
         except OSError as e:
-            bb.warn( "Stat failed" + str(e) + "\n")
+            bb.note( "Stat failed" + str(e) + "\n")
             continue
         chksums.append(hash_file(os.path.join(dirname,f_dir,f)))
     ver_code_string = ''.join(chksums).lower()
@@ -412,7 +418,22 @@ python do_spdx_creat_tarball(){
 }
 # For scancode-tk.bbclass, just 
 python do_spdx_get_src(){
+    import shutil
+
+    spdx_outdir = d.getVar('SPDX_OUTDIR')
+
+    spdx_workdir = d.getVar('SPDX_WORKDIR')
+    spdx_temp_dir = os.path.join(spdx_workdir, "temp")
+    temp_dir = os.path.join(d.getVar('WORKDIR'), "temp")
+    bb.utils.mkdirhier(spdx_workdir)
+
     spdx_get_src(d)
+
+    if os.path.isdir(spdx_temp_dir):
+        for f_dir, f in list_files(spdx_temp_dir):
+            temp_file = os.path.join(spdx_temp_dir,f_dir,f)
+            shutil.copy(temp_file, temp_dir)
+    bb.note("temp_dir = " + spdx_temp_dir)
 }
 
 #For SPDX2.3
@@ -459,7 +480,7 @@ def get_external_refs(d):
         external_refs += "},"
 
     external_refs += "]"
-    #bb.warn("external_refs  = " + external_refs) 
+    #bb.warn("external_refs  = " + external_refs)    
     return external_refs
 
 def get_pkgpurpose(d):
@@ -473,7 +494,6 @@ def get_build_date(d):
     from datetime import datetime, timezone
 
     build_time = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    #bb.warn("time zone = " + build_time)
     return build_time
 
 def get_depends_on(d):
@@ -488,7 +508,6 @@ def get_depends_on(d):
         else:
             depends_spdx += depend + ","
     depends_spdx = depends_spdx.strip(',')
-    bb.note("depends_spdx = " + depends_spdx)
     return depends_spdx
 
 
