@@ -285,6 +285,12 @@ def write_cached_spdx( info,sstatefile, ver_code ):
             + r"/a\\" + new_line + "' "
         return dest_sed_cmd
 
+    def sed_insert_front(dest_sed_cmd,key_word,new_line):
+        dest_sed_cmd = dest_sed_cmd + "-e '/^" + key_word \
+            + r"/i\\" + new_line + "' "
+        return dest_sed_cmd
+
+
     ## Delet ^M in doc format
     subprocess.call("sed -i -e 's#\r##g' %s" % sstatefile, shell=True)
     
@@ -302,8 +308,9 @@ def write_cached_spdx( info,sstatefile, ver_code ):
     sed_cmd = sed_replace(sed_cmd,"Creator: Tool: ",info['creator']['Tool'])
 
     ## Package level information
+    sed_cmd = sed_replace_aline(sed_cmd, "SPDXVersion: SPDX-2.2", "SPDXVersion: SPDX-2.3")
     sed_cmd = sed_replace(sed_cmd, "PackageName: ", info['pn'])
-    sed_cmd = sed_replace_aline(sed_cmd, "SPDXID: SPDXRef-upload", "SPDXID: SPDXRef-" + info['pkg_spdx_id'])
+    sed_cmd = sed_replace_aline(sed_cmd, "SPDXID: SPDXRef-", "SPDXID: SPDXRef-" + info['pkg_spdx_id'])
     sed_cmd = sed_replace(sed_cmd, "Relationship: SPDXRef-DOCUMENT DESCRIBES SPDXRef-", info['pkg_spdx_id'])
     sed_cmd = sed_insert(sed_cmd, "PackageName: ", "PackageVersion: " + info['pv'])
     sed_cmd = sed_replace(sed_cmd, "PackageDownloadLocation: ",info['package_download_location'])
@@ -322,7 +329,7 @@ def write_cached_spdx( info,sstatefile, ver_code ):
     sed_cmd = sed_insert(sed_cmd, "PackageVerificationCode: ", "PrimaryPackagePurpose: " + info['purpose'])
     depends = info['depends_on']
     for depend in re.split(r'\s*[,\s\n\r]\s*', depends):
-        sed_cmd = sed_insert(sed_cmd, "PackageCopyrightText: ", "Relationship: SPDXRef-" + info['pn'] + " DEPENDS_ON SPDXRef-" + depend)
+        sed_cmd = sed_insert_front(sed_cmd, "PackageCopyrightText: ", "Relationship: SPDXRef-" + info['pn'] + " DEPENDS_ON SPDXRef-" + depend)
     bb.note("sed_cmd = " + sed_cmd)
     sed_cmd = sed_cmd + sstatefile
     subprocess.call("%s" % sed_cmd, shell=True)

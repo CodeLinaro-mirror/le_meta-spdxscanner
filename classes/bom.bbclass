@@ -12,18 +12,12 @@ HOSTTOOLS += "bom"
 
 COPYLEFT_RECIPE_TYPES ?= 'target nativesdk'
 inherit copyleft_filter
-
 inherit spdx-common 
+HOSTTOOLS += "bom"
 
 do_get_report[dirs] = "${SPDX_OUTDIR}"
 
 CREATOR_TOOL = "bom.bbclass in meta-spdxscanner"
-
-export EXTRACTCODE_LIBARCHIVE_PATH = "${STAGING_LIBDIR_NATIVE}/libarchive.so"
-export EXTRACTCODE_7Z_PATH = "${STAGING_BINDIR_NATIVE}/7z"
-export TYPECODE_LIBMAGIC_PATH = "${STAGING_LIBDIR_NATIVE}/libmagic.so"
-export TYPECODE_LIBMAGIC_DB_PATH = "${STAGING_DATADIR_NATIVE}/magic.mgc"
-
 
 python () {
     pn = d.getVar('PN')

@@ -10,18 +10,12 @@
 
 COPYLEFT_RECIPE_TYPES ?= 'target nativesdk'
 inherit copyleft_filter
-
 inherit spdx-common 
+HOSTTOOLS += "scancode"
 
 do_get_report[dirs] = "${SPDX_OUTDIR}"
 
 CREATOR_TOOL = "scancode-tk.bbclass in meta-spdxscanner"
-
-export EXTRACTCODE_LIBARCHIVE_PATH = "${STAGING_LIBDIR_NATIVE}/libarchive.so"
-export EXTRACTCODE_7Z_PATH = "${STAGING_BINDIR_NATIVE}/7z"
-export TYPECODE_LIBMAGIC_PATH = "${STAGING_LIBDIR_NATIVE}/libmagic.so"
-export TYPECODE_LIBMAGIC_DB_PATH = "${STAGING_DATADIR_NATIVE}/magic.mgc"
-
 
 python () {
     #If not for target, won't creat spdx.
@@ -78,7 +72,6 @@ python () {
     if d.getVar('PACKAGES'):
        # Some recipes do not have any packaging tasks
        if hasTask("do_package_write_rpm") or hasTask("do_package_write_ipk") or hasTask("do_package_write_deb"):
-           d.appendVarFlag('do_get_report', 'depends', ' scancode-toolkit-native:do_populate_sysroot')
            d.appendVarFlag('do_spdx', 'depends', ' %s:do_get_report' % pn)
            d.appendVarFlag('do_get_report', 'depends', ' %s:do_spdx_get_src' % pn)
            d.appendVarFlag('do_spdx', 'depends', ' %s:do_get_report' % pn)
@@ -137,6 +130,13 @@ python do_get_report(){
     info['package_contains'] = (d.getVar('CONTAINED') or "")
     info['package_static_link'] = (d.getVar('STATIC_LINK') or "")
     info['modified'] = "false"
+    info['external_refs'] = get_external_refs(d)
+    info['purpose'] = get_pkgpurpose(d)
+    info['release_date'] = (d.getVar('REALASE_DATE') or "")
+    info['build_time'] = get_build_date(d)
+    info['depends_on'] = get_depends_on(d)
+    info['pkg_spdx_id'] = get_spdxid_pkg(d)
+
     srcuri = d.getVar("SRC_URI", False).split()
     length = len("file://")
     for item in srcuri:
@@ -149,26 +149,22 @@ python do_get_report(){
     git_path = "%s/git/.git" % info['sourcedir']
     if os.path.exists(git_path):
         remove_dir_tree(git_path)
-    invoke_scancode(info['sourcedir'],spdx_file)
+    invoke_scancode(d, info['sourcedir'],spdx_file)
 
     write_cached_spdx(info,spdx_file,cur_ver_code)
     create_manifest(info,spdx_file)
 }
 
-def invoke_scancode(OSS_src_dir, spdx_file):
+def invoke_scancode(d, OSS_src_dir, spdx_file):
     import subprocess
     import string
     import json
     import codecs
-    import logging
 
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    logging.basicConfig(level=logging.INFO)
-
+    processes = d.getVar("BB_NUMBER_THREADS") 
     path = os.getenv('PATH')
-    scancode_cmd = bb.utils.which(os.getenv('PATH'), "scancode")
-    scancode_cmd = scancode_cmd + " -lpci --spdx-tv " + spdx_file + " " + OSS_src_dir
+    scancode_cmd = "scancode -lpci --max-in-memory 0 --processes " + processes + " --spdx-tv " + spdx_file + " " + OSS_src_dir
+    bb.note ("scancode_cmd = " + scancode_cmd)
     print(scancode_cmd)
     try:
         subprocess.check_output(scancode_cmd,
