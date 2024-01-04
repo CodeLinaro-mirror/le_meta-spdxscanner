@@ -1,114 +1,185 @@
 meta-spdxscanner
 ================
-
-1.meta-spdxscanner supports the following SPDX create tools.
+This layer helps Yocto user to create SBOM data by spdx file format(spdx2.3). If you 
+want to get the SBOM data by scanning the source code of OSS which have been i
+built by bitbake, you can try this layer.
+meta-spdxscanner supports the following third party source code scan tools:
 
   - fossology python REST API
  
   - scancode-tk
+
+  - bom
  
   - fossology REST API (by curl)
 
-2.meta-spdxscanner supports upload OSS source code to blackduck server by Synopsys Detect.
+How to select a scanner to use
+============
+Each of scanners(*.bbclass) has it's features. You can refer to the official 
+websites of them to help you to make a decision. You also can refer to the 
+example directory in meta-spdxcanner. In the example directory, there are 
+several spdx files examples of different OSS whit different *.bbclass. Maybe 
+these can give you some help. If there are still difficulties, you can contact 
+me for any questions. 
 
-  - blackduck-upload.bbclass
+Dependencies
+============
+This layer depends on:
 
-DEPENDS
------------------------
+  URI: git://git.openembedded.org/openembedded-core
+  branch: [same one as checked out for this layer]
 
-For fossology-python.bbclass 
+  URI: git://git.openembedded.org/meta-openembedded/meta-oe
+  branch: [same one as checked out for this layer]
 
-  - [fossology server](https://hub.docker.com/r/fossology/fossology/)
-  
-  - [fossology-python](https://github.com/fossology/fossology-python)
+fossology-python.bbclass depends on in addition:
 
-  - openembedded-core
+  URI: https://hub.docker.com/r/fossology/fossology/
+  Image ID: 28b9a3424209
 
-  - meta-oe/meta-python
+  URI:  https://github.com/fossology/fossology-python
+  version: 2.1.0  
 
-  - meta-oe/meta-oe
+scancode-tk.bbclass depends on in addition:
 
-  - meta-oe/meta-webserver
-
-
-For scancode-tk.bbclass
-
-  - openembedded-core
-
-  - meta-oe/meta-python
-
-
-For fossology-rest.bbclass
-
-  - [fossology server](https://hub.docker.com/r/fossology/fossology/)
-
-  - openembedded-core
-
-  - meta-oe/meta-python
+  URI: https://github.com/kubernetes-sigs/bom
+  version: last  
 
 
-For blackduck-upload.bbclass
+fossology-rest.bbclass depends on in addition:
 
-  - openembedded-core
+  URI: https://hub.docker.com/r/fossology/fossology/
+  Image ID: 28b9a3424209
 
+Adding the spdxscanner layer to your build
+========================================
 
+In order to use this layer, you need to make the build system aware of
+it.
 
-How to use
------------------------
+Assuming the spdxscanner layer exists at the top-level of your
+yocto build tree, you can add it to the build system by adding the
+location of the spdxscanner layer to bblayers.conf, along with any
+other layers needed. e.g.:
 
-Now, meta-spdxscanner provides three methods as following to create spdx files. Please select one to use.
+  BBLAYERS ?= " \
+    /path/to/oe-core/meta \
+    /path/to/meta-openembedded/meta-oe \
+    /path/to/meta-openembedded/meta-python \
+    /path/to/meta-openembedded/meta-webserver \
+    /path/to/layer/meta-spdxscanner "
 
-First, edit the conf/local.conf file, select one module to enable it.
+How to enable one scanner
+=========================
+
+Now, meta-spdxscanner provides several methods(*.bbclass) as following to 
+create spdx files. Please select one to use reference to the following way.
 
 1.fossology-python.bbclass
 
 ```
-  $ cat conf/local.conf
+  $ cat /path/to/builddir/conf/local.conf
   ...
+  INHERIT += "cve-check"
+  CVE_CHECK_FORMAT_JSON = "0"
   INHERIT += "fossology-python"
   TOKEN = "eyJ0eXAiO..."
-  WAIT_TIME = "..." //Optional, by default, it is 0. If you run hundreds of do_spdx task, 
-                    //and your fossology server is not fast enough, it's better to added this value.
-  FOSSOLOGY_SERVER = "http://xx.xx.xx.xx:8081/repo" //Optional, by default, it is http://127.0.0.1:8081/repo
-  FOLDER_NAME = "xxxx" //Optional, by default, it is the top folder "Software Repository"(folderId=1).
-  SPDX_DEPLOY_DIR = "${DeployDir}" //Optional, by default, spdx files will be deployed to ${BUILD_DIR}/tmp/deploy/spdx/
+  WAIT_TIME = "..."  #Set wait time for fossology server.By default, it is 0. 
+                     #If you run multi do_spdx task, please set >=300 to it.
+  FOSSOLOGY_SERVER = "http://xx.xx.xx.xx:8081/repo" #Set the fossology server
+                                                    #URL. By default, it is 
+                                                    #"http://127.0.0.1:8081/repo"
+  FOLDER_NAME = "xxxx" #The folder name that upload to in fossology server.By 
+                       #default. It is the top folder "Software Repository"
+                       #(folderId=1).
+  SPDX_DEPLOY_DIR = "${DeployDir}" #The deploy directory. By default, spdx 
+                                   #files will be deployed to 
+                                   #${BUILD_DIR}/tmp/deploy/spdx/
+  SAVE_SPDX_ACHIVE = "1" #Whether seve the source archive file that has been 
+                         #scanned. By default, it will not be saved.
+  REALASE_DATE = "xxxxxx" #Set release date, it will be showed in spdx by 
+                          #"ReleaseDate: xxxxxx".
   ...
 ```
   Note
 
-  - If you want to use fossology-python.bbclass, you have to make sure that fossology server on your host and make sure it works well.
-    Please reference to https://hub.docker.com/r/fossology/fossology/.
+  - If you want to use fossology-python.bbclass, you have to make sure that 
+    fossology server on your host and make sure it works well. Please reference
+     to https://hub.docker.com/r/fossology/fossology/.
 
-  - TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
+  - TOKEN can be created on fossology server after login by 
+    "Admin"->"Users"->"Edit user account"->"Create a new token".
 
 2.scancode-tk.bbclass
 
-  - inherit the folowing class in your conf/local.conf.
-
 ```
-  PREFERRED_VERSION_python3-pluggy-native = "0.13.1"
+  $ cat /path/to/builddir/conf/local.conf
+  ...
+  INHERIT += "cve-check"
+  CVE_CHECK_FORMAT_JSON = "0"
   INHERIT += "scancode-tk"
+  SAVE_SPDX_ACHIVE = "1" #Whether seve the source archive file that has been
+                         #scanned. By default, it will not be saved.
+  REALASE_DATE = "xxxxxx" #Set release date, it will be showed in spdx by
+                          #"ReleaseDate: xxxxxx".
+  ...
 ```
 
-3.fossology-rest.bbclass
-
-  - inherit the folowing class in your conf/local.conf.
+3.bom.bbclass
 
 ```
+  $ cat /path/to/builddir/conf/local.conf
+  ...
+  INHERIT += "cve-check"
+  CVE_CHECK_FORMAT_JSON = "0"
+  INHERIT += "bom"
+  SAVE_SPDX_ACHIVE = "1" #Whether seve the source archive file that has been
+                         #scanned. By default, it will not be saved.
+  REALASE_DATE = "xxxxxx" #Set release date, it will be showed in spdx by
+                          #"ReleaseDate: xxxxxx".
+  ...
+```
+
+4.fossology-rest.bbclass
+
+```
+  $ cat /path/to/builddir/conf/local.conf
+  ...
+  INHERIT += "cve-check"
+  CVE_CHECK_FORMAT_JSON = "0"
   INHERIT += "fossology-rest"
   TOKEN = "eyJ0eXAiO..."
-  FOSSOLOGY_SERVER = "http://xx.xx.xx.xx:8081/repo" //Optional, by default, it is http://127.0.0.1:8081/repo
-  FOLDER_NAME = "xxxx" //Optional, by default, it is the top folder "Software Repository"(folderId=1).
-  SPDX_DEPLOY_DIR = "${DeployDir}" //Optional, by default, spdx files will be deployed to ${BUILD_DIR}/tmp/deploy/spdx/ 
+  WAIT_TIME = "..."  #Set wait time for fossology server.By default, it is 0.
+                     #If you run multi do_spdx task, please set >=300 to it.
+  FOSSOLOGY_SERVER = "http://xx.xx.xx.xx:8081/repo" #Set the fossology server
+                                                    #URL. By default, it is
+                                                    #"http://127.0.0.1:8081/repo"
+  FOLDER_NAME = "xxxx" #The folder name that upload to in fossology server.By
+                       #default. It is the top folder "Software Repository"
+                       #(folderId=1).
+  SPDX_DEPLOY_DIR = "${DeployDir}" #The deploy directory. By default, spdx
+                                   #files will be deployed to
+                                   #${BUILD_DIR}/tmp/deploy/spdx/
+  SAVE_SPDX_ACHIVE = "1" #Whether seve the source archive file that has been
+                         #scanned. By default, it will not be saved.
+  REALASE_DATE = "xxxxxx" #Set release date, it will be showed in spdx by
+                          #"ReleaseDate: xxxxxx".
+  ...
 ```
   Note
 
-  - If you want to use fossology-rest.bbclass, you have to make sure that fossology server on your host and make sure it works well.
+  - If you want to use fossology-rest.bbclass, you have to make sure that 
+    fossology server on your host and make sure it works well.
     Please reference to https://hub.docker.com/r/fossology/fossology/.
 
-  - TOKEN can be created on fossology server after login by "Admin"->"Users"->"Edit user account"->"Create a new token".
+  - TOKEN can be created on fossology server after login by 
+    "Admin"->"Users"->"Edit user account"->"Create a new token".
 
-Finished editing the conf/local.con file, you can get spdx files whatever your build by bitbake. For example:
+How to create spdx files by bitbake
+===================================
+
+Finished editing the conf/local.con file, you can get spdx files whatever your 
+build by bitbake. For example:
   - For what your build(e.g, openssl) and the dependences.
 ```
     $ bitbake openssl
@@ -117,53 +188,33 @@ Finished editing the conf/local.con file, you can get spdx files whatever your b
 ```
     $ bitbake openssl -f -c spdx
 ```
-  - Only get spdx files for what will be built for a image file(e.g, core-image-minimal.bb) without building.
+  - Only get spdx files for what will be built for a image file
+    (e.g, core-image-minimal.bb) without building.
 ```
     $ bitbake --runall=spdx core-image-minimal
 ```
-
-If you has a blackduck server, you can use the following method to upload source code to the server.
-
-1.blackduck-upload.bbclass
-
-   First, edit the conf/local.conf file under build directory as following:
-
-```
-INHERIT += "blackduck-upload"
-BD_URI = "https://xxx.yyy.com/"
-PRO_NAME = "xxx"
-PRO_VER = "xxx"
-PROXY_HOST = "xxx"
-PROXY_PORT = "xxxx"
-PROXY_UN = "xxx"
-PROXY_PW = "xxxx"
-TOKEN = "NmJ..."
-
-```
-Finished editing the conf/local.con file, you can upload the source code of of recipe by bitbake. For example:
-  - For what your build(e.g, openssl) and the dependences.
+  - Get spdx files for what will be built for a image file
+    (e.g, core-image-minimal.bb) together with building.
 ```
     $ bitbake openssl
 ```
-  - Only upload one OSS(e.g, openssl).
-```
-    $ bitbake openssl -f -c synopsys_detect
-```
-  - Only get spdx files for what will be built for a image file(e.g, core-image-minimal.bb) without compiling.
-```
-    $ bitbake --runall=synopsys_detect core-image-minimal
-```
 
-Contributing
-------------
+Maintenance
+======================================
 
-To contribute to this layer you should submit the patches for review to the
-mailing list (yocto@lists.yoctoproject.org) or to maintainer directly.
+Send pull requests, patches, comments or questions to yocto@lists.yoctoproject.org
 
-Mailing list:
+When sending single patches, please using something like:
+'git send-email -1 --to yocto@lists.yoctoproject.org --subject-prefix=meta-spdxscanner][PATCH'
 
-    yocto@lists.yoctoproject.org
+These values can be set as defaults for this repository:
 
-Layer maintainer:
+$ git config sendemail.to yocto@lists.yoctoproject.org
+$ git config format.subjectPrefix meta-spdxscanner][PATCH
 
-    leimaohui@fujitsu.com
+Now you can just do 'git send-email origin/master' to send all local patches.
+
+For pull requests, please use create-pull-request and send-pull-request.
+
+Maintainers:    leimaohui@fujitsu.com
+
