@@ -13,6 +13,10 @@
 # 2) By default,spdx files will be output to the path which is defined as[SPDX_DEPLOY_DIR] 
 #    in ./meta/conf/spdx-dosocs.conf.
 inherit spdx-common
+
+do_spdx[network] = "1"
+do_get_report[network] = "1"
+
 FOSSOLOGY_SERVER ?= "http://127.0.0.1:8081/repo"
 FOLDER_NAME ?= "Software Repository"
 #upload OSS into No.1 folder of fossology
