@@ -40,7 +40,7 @@ fossology-python.bbclass depends on in addition:
   URI:  https://github.com/fossology/fossology-python
   version: 2.1.0  
 
-scancode-tk.bbclass depends on in addition:
+bom.bbclass depends on in addition:
 
   URI: https://github.com/kubernetes-sigs/bom
   version: last  
