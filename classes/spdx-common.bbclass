@@ -1,5 +1,6 @@
 # This class supplys common functions.
 
+HOSTTOOLS += "xz"
 SPDX_DEPLOY_DIR ??= "${DEPLOY_DIR}/spdx"
 SPDX_TOPDIR ?= "${WORKDIR}/spdx_sstate_dir"
 SPDX_OUTDIR ?= "${SPDX_TOPDIR}/${TARGET_SYS}/${PF}/"
@@ -72,9 +73,9 @@ def get_tar_name(d, suffix):
     """
 
     if suffix:
-        filename = '%s-%s.tar.gz' % (d.getVar('PF'), suffix)
+        filename = '%s-%s.tar.xz' % (d.getVar('PF'), suffix)
     else:
-        filename = '%s.tar.gz' % d.getVar('PF')
+        filename = '%s.tar.xz' % d.getVar('PF')
 
     return filename
 
@@ -90,7 +91,7 @@ def spdx_create_tarball(d, srcdir, suffix, ar_outdir):
     filename = get_tar_name(d, suffix)
     tarname = os.path.join(ar_outdir, filename)
     bb.note('Creating %s' % tarname)
-    tar = tarfile.open(tarname, 'w:gz')
+    tar = tarfile.open(tarname, 'w:xz')
     tar.add(srcdir, arcname=os.path.basename(srcdir), filter=exclude_useless_paths)
     tar.close()
     shutil.rmtree(srcdir)
