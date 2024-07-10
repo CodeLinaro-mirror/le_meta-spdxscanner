@@ -10,7 +10,7 @@ inherit native
 
 SRCREV = "2e2ff0f3c6d8be53ef80aa8df2e60abfa0866906"
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 SRC_URI = "https://sig-repo.synopsys.com/bds-integrations-release/com/synopsys/integration/synopsys-detect/${PV}/synopsys-detect-${PV}.jar \
            file://LICENSE \
