@@ -3,7 +3,7 @@ DESCRIPTION = "Download synopsys-detect-${PN}.jar for blackduck-upload.bbclass."
 HOMEPAGE = "https://sig-repo.synopsys.com/bds-integrations-release/com/synopsys/integration/synopsys-detect/"
 SECTION = "devel"
 
-LICENSE = "Synopsys End User Software License & Maintenance Agreement"
+LICENSE = "Synopsys-End-User-Software-License & Maintenance-Agreement"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=700445109629d278c8224c1fd727a991"
 
 inherit native
