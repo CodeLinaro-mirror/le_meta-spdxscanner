@@ -12,7 +12,7 @@ HOSTTOOLS += "bom"
 
 COPYLEFT_RECIPE_TYPES ?= 'target nativesdk'
 inherit copyleft_filter
-inherit spdx-common 
+inherit spdx-api 
 HOSTTOOLS += "bom"
 
 do_get_report[dirs] = "${SPDX_OUTDIR}"

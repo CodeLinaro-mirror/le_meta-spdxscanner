@@ -17,7 +17,7 @@
 COPYLEFT_RECIPE_TYPES ?= 'target nativesdk'
 inherit copyleft_filter
 
-inherit spdx-common 
+inherit spdx-api
 
 do_foss_upload[dirs] = "${SPDX_TOPDIR}"
 do_foss_upload[network] = "1"

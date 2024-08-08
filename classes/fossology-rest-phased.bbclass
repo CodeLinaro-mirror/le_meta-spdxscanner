@@ -12,7 +12,7 @@
 # 1) Make sure fossdriver has beed installed in your host
 # 2) By default,spdx files will be output to the path which is defined as[SPDX_DEPLOY_DIR] 
 #    in ./meta/conf/spdx-dosocs.conf.
-inherit spdx-common
+inherit spdx-api
 FOSSOLOGY_SERVER ?= "http://127.0.0.1:8081/repo"
 FOSSOLOGY_REUPLOAD ??= "0"
 

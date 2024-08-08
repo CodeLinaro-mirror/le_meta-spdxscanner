@@ -14,7 +14,7 @@ HOSTTOOLS += "java"
 COPYLEFT_RECIPE_TYPES ?= 'target nativesdk'
 inherit copyleft_filter
 
-inherit spdx-common 
+inherit spdx-api 
 
 do_upload[dirs] = "${SPDX_TOPDIR}"
 do_bd_upload[network] = "1"
