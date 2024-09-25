@@ -29,6 +29,9 @@ do_get_report[network] = "1"
 CREATOR_TOOL = "fossology-python.bbclass in meta-spdxscanner"
 FOSSOLOGY_SERVER ?= "http://127.0.0.1/repo"
 WAIT_TIME ?= "20"
+FOSSOLOGY_USER = "fossy"
+FOSSOLOGY_PASSWORD = "fossy"
+TOKEN_NAME = "fossy_token"
 
 python () {
     from multiprocessing import Lock
@@ -125,14 +128,48 @@ python do_foss_upload(){
     logger.setLevel(logging.INFO)
     logging.basicConfig(level=logging.INFO)
 
+
+    import os
+    import sys
+    import pathlib
+    import secrets
+    from getpass import getpass
+    import requests
     from fossology import Fossology, fossology_token
-    from fossology.obj import TokenScope
-    from fossology.exceptions import FossologyApiError, AuthenticationError
+    from fossology.obj import Group
+    from fossology.enums import AccessLevel, TokenScope
+    from fossology.exceptions  import FossologyApiError
+    os.environ["FOSSOLOGY_USER"] = "fossy"
+    os.environ["FOSSOLOGY_USER_PASS"] = "fossy"
+
+
     from tenacity import retry, TryAgain, stop_after_attempt
 
     fossology_server = d.getVar('FOSSOLOGY_SERVER')
-    token = d.getVar('TOKEN')
-    foss = Fossology(fossology_server, token, "fossy")
+    fossology_user = d.getVar('FOSSOLOGY_USER')
+    path_to_token_file = pathlib.Path.cwd() / '.token'
+    if not path_to_token_file.exists():
+      if os.environ["FOSSOLOGY_USER"] and os.environ["FOSSOLOGY_USER_PASS"]:
+          username =  os.environ["FOSSOLOGY_USER"]
+          pw =  os.environ["FOSSOLOGY_USER_PASS"]
+      else:
+          bb.warn("Enter your Fossology credentials, e.g. in the test environment 'username: fossy' and 'password: fossy'")
+          username = input("username: ")
+          pw = getpass()
+      token = fossology_token(
+           fossology_server,
+           fossology_user,
+           pw,
+           secrets.token_urlsafe(8), # TOKEN_NAME seen in the database
+           TokenScope.WRITE,
+       )
+      with open(path_to_token_file, "w") as fp:
+           token_len = fp.write(token)
+    else:
+      with open(".token", "r") as fp:
+          token = fp.read()
+    
+    foss = Fossology(fossology_server, token)
     
     filepath = d.getVar('SPDX_OUTDIR')
     
@@ -159,11 +196,11 @@ def get_upload(d, folder, foss):
 
     filename = get_upload_file_name(d)
     try:
-        upload_list, _ = foss.list_uploads(page_size=1, all_pages=True)
+        upload_list, _ = foss.list_uploads(folder = folder, all_pages=True)
     except FossologyApiError as error:
         time.sleep(10)
         try:
-            upload_list, _ = foss.list_uploads(page_size=1, all_pages=True)
+            upload_list, _ = foss.list_uploads(folder = folder, all_pages=True)
         except FossologyApiError as error:
             bb.error(error.message)
 
@@ -171,9 +208,8 @@ def get_upload(d, folder, foss):
     bb.note("Check tarball: %s ,has been uploaded?" % filename)
     for upload in upload_list:
         if upload.uploadname == filename and upload.foldername == folder.name:
-            bb.note("The size of uploaded file is %s" % upload.filesize)
             bb.note("Found " + upload.uploadname  + " in " + folder.name)
-            bb.note("filesha1  = %s" % upload.filesha1)
+            bb.note("upload.hash.size  = %s" % upload.hash.size)
             return upload
     return None
 
@@ -182,7 +218,7 @@ def upload_oss(d, folder, foss, filepath):
 
     from fossology.exceptions import AuthorizationError, FossologyApiError
     from tenacity import TryAgain
-    from fossology.obj import AccessLevel
+    from fossology.enums import AccessLevel
 
     (work_dir, filename) = os.path.split(filepath)
 
@@ -233,6 +269,17 @@ python do_schedule_jobs(){
     import re
     import time
     import logging
+    import sys
+    import pathlib
+    import secrets
+    from getpass import getpass
+    import requests
+    from fossology import Fossology, fossology_token
+    from fossology.enums import AccessLevel, TokenScope
+    from fossology.exceptions  import FossologyApiError
+    os.environ["FOSSOLOGY_USER"] = "fossy"
+    os.environ["FOSSOLOGY_USER_PASS"] = "fossy"
+
 
     pn = d.getVar( 'PN')
     #If not for target, won't creat spdx.
@@ -243,11 +290,33 @@ python do_schedule_jobs(){
     logger.setLevel(logging.INFO)
     logging.basicConfig(level=logging.INFO)
 
-    from fossology import Fossology, fossology_token
-    from fossology.obj import TokenScope
-    from fossology.exceptions import FossologyApiError, AuthenticationError
     from tenacity import retry, TryAgain, stop_after_attempt
     from fossology.obj import Agents
+    fossology_server = d.getVar('FOSSOLOGY_SERVER')
+    fossology_user = d.getVar('FOSSOLOGY_USER')
+    path_to_token_file = pathlib.Path.cwd() / '.token'
+    if not path_to_token_file.exists():
+        if os.environ["FOSSOLOGY_USER"] and os.environ["FOSSOLOGY_USER_PASS"]:
+            username =  os.environ["FOSSOLOGY_USER"]
+            pw =  os.environ["FOSSOLOGY_USER_PASS"]
+        else:
+            bb.warn("Enter your Fossology credentials, e.g. in the test environment 'username: fossy' and 'password: fossy'")
+            username = input("username: ")
+            pw = getpass()
+        token = fossology_token(fossology_server,
+                fossology_user,
+                pw,
+                secrets.token_urlsafe(8), # TOKEN_NAME seen in the database
+                TokenScope.WRITE,
+        )
+        with open(path_to_token_file, "w") as fp:
+            token_len = fp.write(token)
+    else:
+        # Load the token
+        with open(".token", "r") as fp:
+            token = fp.read()
+
+    foss = Fossology(fossology_server, token)
 
     bb.note("Begin to schedule jobs!")
     info = {}
@@ -280,10 +349,6 @@ python do_schedule_jobs(){
         create_manifest(info,sstatefile)
         return
 
-    fossology_server = d.getVar('FOSSOLOGY_SERVER')
-    token = d.getVar('TOKEN')
-    foss = Fossology(fossology_server, token, "fossy")
-
     if d.getVar('FOLDER_NAME', False):
         folder_name = d.getVar('FOLDER_NAME')
         folder = create_folder(d, foss, token, folder_name)
@@ -294,12 +359,20 @@ python do_schedule_jobs(){
     if upload == None:
         bb.error("%s has not been uploaded." + pn)
 
-    if not foss.user.agents:
-        additional_agent = {"PokyAgent": True}
-        foss.user.agents = Agents(True, True, False, False, True, True, True, True, True,)
-    analysis_agents = foss.user.agents.to_dict()
     jobs_spec = {
-        "analysis": analysis_agents,
+        "analysis": {
+            "bucket": True,
+            "copyright_email_author": True,
+            "ecc": True,
+            "keyword": True,
+            "monk": True,
+            "mime": True,
+            "monk": True,
+            "nomos": True,
+            "ojo": True,
+            "package": True,
+            "specific_agent": True,
+        },
         "decider": {
             "nomos_monk": True,
             "bulk_reused": True,
@@ -375,10 +448,18 @@ python do_get_report(){
     import os, sys, json, shutil, time
     import logging
     import subprocess
-    from fossology import Fossology, fossology_token
-    from fossology.exceptions import AuthorizationError, FossologyApiError
+    import pathlib
+    import secrets
+    from getpass import getpass
+    import requests
     from tenacity import TryAgain
-    from fossology.obj import ReportFormat
+    from fossology import Fossology, fossology_token
+    from fossology.obj import Group
+    from fossology.enums import AccessLevel, TokenScope
+    from fossology.exceptions  import FossologyApiError
+    from fossology.enums import ReportFormat
+    os.environ["FOSSOLOGY_USER"] = "fossy"
+    os.environ["FOSSOLOGY_USER_PASS"] = "fossy"
 
     i = 0
     wait_time = int(d.getVar('WAIT_TIME'))
@@ -398,8 +479,30 @@ python do_get_report(){
     bb.note("Begin to get report!")
 
     fossology_server = d.getVar('FOSSOLOGY_SERVER')
-    token = d.getVar('TOKEN')
-    foss = Fossology(fossology_server, token, "fossy")
+    fossology_user = d.getVar('FOSSOLOGY_USER')
+    path_to_token_file = pathlib.Path.cwd() / '.token'
+    if not path_to_token_file.exists():
+        if os.environ["FOSSOLOGY_USER"] and os.environ["FOSSOLOGY_USER_PASS"]:
+            username =  os.environ["FOSSOLOGY_USER"]
+            pw =  os.environ["FOSSOLOGY_USER_PASS"]
+        else:
+            bb.warn("Enter your Fossology credentials, e.g. in the test environment 'username: fossy' and 'password: fossy'")
+            username = input("username: ")
+            pw = getpass()
+        token = fossology_token(
+            fossology_server,
+            fossology_user,
+            pw,
+            secrets.token_urlsafe(8), # TOKEN_NAME seen in the database
+            TokenScope.WRITE,
+        )
+        with open(path_to_token_file, "w") as fp:
+            token_len = fp.write(token)
+    else:
+        with open(".token", "r") as fp:
+            token = fp.read()
+
+    foss = Fossology(fossology_server, token)
 
     if d.getVar('FOLDER_NAME', False):
         folder_name = d.getVar('FOLDER_NAME')
