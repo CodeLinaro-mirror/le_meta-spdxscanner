@@ -459,24 +459,17 @@ def get_external_refs(d):
                 patched_cves = get_patched_cves(d)
             except FileNotFoundError:
                 bb.fatal("Failure in searching patches")
-            ignored, patched, unpatched, status = check_cves(d, patched_cves)
-            if patched or unpatched or (d.getVar("CVE_CHECK_COVERAGE") == "1" and status):
-                cve_data = get_cve_info(d, patched + unpatched + ignored)
-                #cve_write_data(d, patched, unpatched, ignored, cve_data, status)
+            cve_data, status = check_cves(d, patched_cves)
+            get_cve_info(d, cve_data)
         else:
             bb.note("No CVE database found, skipping CVE check")
             return " "
-    if not patched+unpatched+ignored:
-        return " "
 
     for cve in sorted(cve_data):
-        is_patched = cve in patched
-        is_ignored = cve in ignored
-
         status = "unpatched"
-        if is_ignored:
+        if cve_data[cve]["abbrev-status"] == "Ignored":
             status = "ignored"
-        elif is_patched:
+        elif cve_data[cve]["abbrev-status"] == "Patched" :
             status = "fix"
         else:
             # default value of status is Unpatched
@@ -488,7 +481,6 @@ def get_external_refs(d):
         external_refs += "},"
 
     external_refs += "]"
-    #bb.warn("external_refs  = " + external_refs)    
     return external_refs
 
 def get_pkgpurpose(d):
