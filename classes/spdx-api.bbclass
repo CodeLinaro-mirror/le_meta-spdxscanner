@@ -10,10 +10,11 @@ SPDX_EXCLUDE_NATIVE ??= "1"
 SPDX_EXCLUDE_SDK ??= "1"
 SPDX_EXCLUDE_PACKAGES ??= ""
 
-
 do_spdx[dirs] = "${WORKDIR}"
 
 LICENSELISTVERSION = "2.6"
+
+CVE_CHECK_DB_DLDIR_FILE ?= "${DL_DIR}/CVE_CHECK2/${CVE_CHECK_DB_FILENAME}"
 
 # If ${S} isn't actually the top-level source directory, set SPDX_S to point at
 # the real top-level directory.
@@ -446,42 +447,41 @@ python do_spdx_get_src(){
 
 #For SPDX2.3
 def get_external_refs(d):
+    import shutil
     from oe.cve_check import get_patched_cves
     external_refs = "##------------------------- \n"
     external_refs += "## Security Information \n"
     external_refs += "##------------------------- \n"
     external_refs += "\"externalRefs\" : ["
     unpatched_cves = []
-    nvd_link = "https://nvd.nist.gov/vuln/detail/"
-    with bb.utils.fileslocked([d.getVar("CVE_CHECK_DB_FILE_LOCK")], shared=True):
-        if os.path.exists(d.getVar("CVE_CHECK_DB_FILE")):
-            try:
-                patched_cves = get_patched_cves(d)
-            except FileNotFoundError:
-                bb.fatal("Failure in searching patches")
-            cve_data, status = check_cves(d, patched_cves)
-            get_cve_info(d, cve_data)
-        else:
-            bb.note("No CVE database found, skipping CVE check")
-            return " "
+    if not os.path.exists(d.getVar("CVE_CHECK_DB_FILE")):
+        shutil.copyfile(d.getVar("CVE_CHECK_DB_DLDIR_FILE"), d.getVar("CVE_CHECK_DB_FILE"))
+    try:
+        patched_cves = get_patched_cves(d)
+    except FileNotFoundError:
+        bb.fatal("Failure in searching patches")
+    cve_data, status = check_cves(d, patched_cves)
+    
+    if len(cve_data) or (d.getVar("CVE_CHECK_COVERAGE") == "1" and status):
+        get_cve_info(d, cve_data)
 
-    for cve in sorted(cve_data):
-        status = "unpatched"
-        if cve_data[cve]["abbrev-status"] == "Ignored":
-            status = "ignored"
-        elif cve_data[cve]["abbrev-status"] == "Patched" :
-            status = "fix"
-        else:
-            # default value of status is Unpatched
-            unpatched_cves.append(cve)
-        external_refs += "{\n"
-        external_refs += "\"referenceCategory\" : \"SECURITY\",\n"
-        external_refs += "\"referenceLocator\" : \"https://nvd.nist.gov/vuln/detail/%s\",\n" % cve
-        external_refs += "\"referenceType\" : \"%s\"\n" % status
-        external_refs += "},"
+        for cve in sorted(cve_data):
+            status = "unpatched"
+            if cve_data[cve]["abbrev-status"] == "Ignored":
+                status = "ignored"
+            elif cve_data[cve]["abbrev-status"] == "Patched" :
+                status = "fix"
+            else:
+                # default value of status is Unpatched
+                unpatched_cves.append(cve)
+            external_refs += "{\n"
+            external_refs += "\"referenceCategory\" : \"SECURITY\",\n"
+            external_refs += "\"referenceLocator\" : \"https://nvd.nist.gov/vuln/detail/%s\",\n" % cve
+            external_refs += "\"referenceType\" : \"%s\"\n" % status
+            external_refs += "},"
 
-    external_refs += "]"
-    return external_refs
+        external_refs += "]"
+        return external_refs
 
 def get_pkgpurpose(d):
     section = d.getVar("SECTION")
