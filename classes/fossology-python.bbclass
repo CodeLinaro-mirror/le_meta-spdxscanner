@@ -147,27 +147,31 @@ python do_foss_upload(){
 
     fossology_server = d.getVar('FOSSOLOGY_SERVER')
     fossology_user = d.getVar('FOSSOLOGY_USER')
-    path_to_token_file = pathlib.Path.cwd() / '.token'
-    if not path_to_token_file.exists():
-      if os.environ["FOSSOLOGY_USER"] and os.environ["FOSSOLOGY_USER_PASS"]:
-          username =  os.environ["FOSSOLOGY_USER"]
-          pw =  os.environ["FOSSOLOGY_USER_PASS"]
-      else:
-          bb.warn("Enter your Fossology credentials, e.g. in the test environment 'username: fossy' and 'password: fossy'")
-          username = input("username: ")
-          pw = getpass()
-      token = fossology_token(
-           fossology_server,
-           fossology_user,
-           pw,
-           secrets.token_urlsafe(8), # TOKEN_NAME seen in the database
-           TokenScope.WRITE,
-       )
-      with open(path_to_token_file, "w") as fp:
-           token_len = fp.write(token)
+    if not d.getVar('TOKEN', False):
+        path_to_token_file = pathlib.Path.cwd() / '.token'
+        if not path_to_token_file.exists():
+          if os.environ["FOSSOLOGY_USER"] and os.environ["FOSSOLOGY_USER_PASS"]:
+              username =  os.environ["FOSSOLOGY_USER"]
+              pw =  os.environ["FOSSOLOGY_USER_PASS"]
+          else:
+              bb.warn("Enter your Fossology credentials, e.g. in the test environment 'username: fossy' and 'password: fossy'")
+              username = input("username: ")
+              pw = getpass()
+          token = fossology_token(
+               fossology_server,
+               fossology_user,
+               pw,
+               secrets.token_urlsafe(8), # TOKEN_NAME seen in the database
+               TokenScope.WRITE,
+           )
+          with open(path_to_token_file, "w") as fp:
+               token_len = fp.write(token)
+        else:
+          with open(".token", "r") as fp:
+              token = fp.read()
     else:
-      with open(".token", "r") as fp:
-          token = fp.read()
+        bb.warn("lmh TOKEN is defined.")
+        token=d.getVar('TOKEN')  
     
     foss = Fossology(fossology_server, token)
     
@@ -294,28 +298,30 @@ python do_schedule_jobs(){
     from fossology.obj import Agents
     fossology_server = d.getVar('FOSSOLOGY_SERVER')
     fossology_user = d.getVar('FOSSOLOGY_USER')
-    path_to_token_file = pathlib.Path.cwd() / '.token'
-    if not path_to_token_file.exists():
-        if os.environ["FOSSOLOGY_USER"] and os.environ["FOSSOLOGY_USER_PASS"]:
-            username =  os.environ["FOSSOLOGY_USER"]
-            pw =  os.environ["FOSSOLOGY_USER_PASS"]
+    if not d.getVar('TOKEN', False):
+        path_to_token_file = pathlib.Path.cwd() / '.token'
+        if not path_to_token_file.exists():
+            if os.environ["FOSSOLOGY_USER"] and os.environ["FOSSOLOGY_USER_PASS"]:
+                username =  os.environ["FOSSOLOGY_USER"]
+                pw =  os.environ["FOSSOLOGY_USER_PASS"]
+            else:
+                bb.warn("Enter your Fossology credentials, e.g. in the test environment 'username: fossy' and 'password: fossy'")
+                username = input("username: ")
+                pw = getpass()
+            token = fossology_token(fossology_server,
+                    fossology_user,
+                    pw,
+                    secrets.token_urlsafe(8), # TOKEN_NAME seen in the database
+                    TokenScope.WRITE,
+            )
+            with open(path_to_token_file, "w") as fp:
+                token_len = fp.write(token)
         else:
-            bb.warn("Enter your Fossology credentials, e.g. in the test environment 'username: fossy' and 'password: fossy'")
-            username = input("username: ")
-            pw = getpass()
-        token = fossology_token(fossology_server,
-                fossology_user,
-                pw,
-                secrets.token_urlsafe(8), # TOKEN_NAME seen in the database
-                TokenScope.WRITE,
-        )
-        with open(path_to_token_file, "w") as fp:
-            token_len = fp.write(token)
+            # Load the token
+            with open(".token", "r") as fp:
+                token = fp.read()
     else:
-        # Load the token
-        with open(".token", "r") as fp:
-            token = fp.read()
-
+        token = d.getVar('TOKEN')
     foss = Fossology(fossology_server, token)
 
     bb.note("Begin to schedule jobs!")
@@ -480,27 +486,30 @@ python do_get_report(){
 
     fossology_server = d.getVar('FOSSOLOGY_SERVER')
     fossology_user = d.getVar('FOSSOLOGY_USER')
-    path_to_token_file = pathlib.Path.cwd() / '.token'
-    if not path_to_token_file.exists():
-        if os.environ["FOSSOLOGY_USER"] and os.environ["FOSSOLOGY_USER_PASS"]:
-            username =  os.environ["FOSSOLOGY_USER"]
-            pw =  os.environ["FOSSOLOGY_USER_PASS"]
+    if not d.getVar('TOKEN', False):
+        path_to_token_file = pathlib.Path.cwd() / '.token'
+        if not path_to_token_file.exists():
+            if os.environ["FOSSOLOGY_USER"] and os.environ["FOSSOLOGY_USER_PASS"]:
+                username =  os.environ["FOSSOLOGY_USER"]
+                pw =  os.environ["FOSSOLOGY_USER_PASS"]
+            else:
+                bb.warn("Enter your Fossology credentials, e.g. in the test environment 'username: fossy' and 'password: fossy'")
+                username = input("username: ")
+                pw = getpass()
+            token = fossology_token(
+                fossology_server,
+                fossology_user,
+                pw,
+                secrets.token_urlsafe(8), # TOKEN_NAME seen in the database
+                TokenScope.WRITE,
+            )
+            with open(path_to_token_file, "w") as fp:
+                token_len = fp.write(token)
         else:
-            bb.warn("Enter your Fossology credentials, e.g. in the test environment 'username: fossy' and 'password: fossy'")
-            username = input("username: ")
-            pw = getpass()
-        token = fossology_token(
-            fossology_server,
-            fossology_user,
-            pw,
-            secrets.token_urlsafe(8), # TOKEN_NAME seen in the database
-            TokenScope.WRITE,
-        )
-        with open(path_to_token_file, "w") as fp:
-            token_len = fp.write(token)
+            with open(".token", "r") as fp:
+                token = fp.read()
     else:
-        with open(".token", "r") as fp:
-            token = fp.read()
+         token = d.getVar('TOKEN')
 
     foss = Fossology(fossology_server, token)
 
