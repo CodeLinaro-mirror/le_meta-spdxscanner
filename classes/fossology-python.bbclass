@@ -665,4 +665,4 @@ addtask do_get_report after do_schedule_jobs
 addtask do_spdx
 do_build[recrdeptask] += "do_spdx"
 do_populate_sdk[recrdeptask] += "do_spdx"
-do_get_report[depends] = "cve-update-nvd2-native:do_fetch"
+do_get_report[depends] = "cve-update-nvd2-native:do_unpack"
