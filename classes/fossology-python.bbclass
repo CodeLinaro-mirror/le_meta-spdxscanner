@@ -170,7 +170,6 @@ python do_foss_upload(){
           with open(".token", "r") as fp:
               token = fp.read()
     else:
-        bb.warn("lmh TOKEN is defined.")
         token=d.getVar('TOKEN')  
     
     foss = Fossology(fossology_server, token)

@@ -234,7 +234,9 @@ def find_infoinlicensefile(sstatefile):
         linecache.clearcache()
         line_no = int(line_num) + 1
         line_spdx = linecache.getline(sstatefile, line_no)
-        while not re.match(r'[a-zA-Z]',line_spdx) is None:
+        bb.note("line_spdx = " + line_spdx)
+        while not line_spdx.startswith("FileCopyrightText") and not line_spdx.startswith("##-"):
+            bb.note("line_spdx = " + line_spdx)
             if not line_spdx.startswith("LicenseInfoInFile"):
                 line_no = line_no + 1
                 linecache.clearcache()
@@ -262,6 +264,7 @@ def find_infoinlicensefile(sstatefile):
             line_no = line_no + 1
             linecache.clearcache()
             line_spdx = linecache.getline(sstatefile, int(line_no))
+            bb.note("info_in_license_file = " + info_in_license_file)
     linecache.clearcache()
     return info_in_license_file
             
