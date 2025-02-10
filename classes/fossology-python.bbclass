@@ -102,10 +102,10 @@ python () {
     info['outfile'] = os.path.join(manifest_dir, spdx_name )
     sstatefile = os.path.join(spdx_outdir, spdx_name )
     if os.path.exists(info['outfile']):
-        bb.note(info['pn'] + "spdx file has been exist, do nothing")
+        bb.note(info['pn'] + " spdx file has been exist, do nothing")
         return
     if os.path.exists( sstatefile ):
-        bb.note(info['pn'] + "spdx file has been exist, do nothing")
+        bb.note(info['pn'] + " spdx file has been exist, do nothing")
         create_manifest(info,sstatefile)
         return
     
@@ -170,7 +170,6 @@ python do_foss_upload(){
           with open(".token", "r") as fp:
               token = fp.read()
     else:
-        bb.warn("lmh TOKEN is defined.")
         token=d.getVar('TOKEN')  
     
     foss = Fossology(fossology_server, token)
@@ -348,10 +347,10 @@ python do_schedule_jobs(){
     info['outfile'] = os.path.join(manifest_dir, spdx_name )
     sstatefile = os.path.join(spdx_outdir, spdx_name)
     if os.path.exists(info['outfile']):
-        bb.note(info['pn'] + "spdx file has been exist, do nothing")
+        bb.note(info['pn'] + " spdx file has been exist, do nothing")
         return
     if os.path.exists( sstatefile ):
-        bb.note(info['pn'] + "spdx file has been exist, do nothing")
+        bb.note(info['pn'] + " spdx file has been exist, do nothing")
         create_manifest(info,sstatefile)
         return
 
@@ -551,10 +550,10 @@ python do_get_report(){
     info['outfile'] = os.path.join(manifest_dir, spdx_name )
     spdx_file = os.path.join(spdx_outdir, spdx_name )
     if os.path.exists(info['outfile']):
-        bb.note(info['pn'] + "spdx file has been exist, do nothing")
+        bb.note(info['pn'] + " spdx file has been exist, do nothing")
         return
     if os.path.exists( spdx_file ):
-        bb.note(info['pn'] + "spdx file has been exist, do nothing")
+        bb.note(info['pn'] + " spdx file has been exist, do nothing")
         create_manifest(info,spdx_file)
         return
     info['data_license'] = (d.getVar('DATA_LICENSE') or '')
@@ -590,8 +589,6 @@ python do_get_report(){
             upload, report_format=ReportFormat.SPDX2TV
         )
     except FossologyApiError as error:
-        bb.error(error.message)
-    except AuthorizationError as error:
         bb.error(error.message)
     except AttributeError as error:
         bb.error("AttributeError! It seems fossology server is busy.")
