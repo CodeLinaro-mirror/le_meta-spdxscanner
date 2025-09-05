@@ -198,7 +198,12 @@ build by bitbake. For example:
 ```
     $ bitbake openssl
 ```
-
+  - Compare the license information in recipe with the result of spdx file.
+    (Only supported by fossology-python.bbclass now.)
+```
+    $ bitbake openssl -f -c  do_upload_recipe_source
+    $ bitbake openssl -f -c  do_upload_recipe_source
+```
 Maintenance
 ======================================
 

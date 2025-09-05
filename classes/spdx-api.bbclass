@@ -1,5 +1,4 @@
 # This class supplys common functions.
-
 HOSTTOOLS += "xz"
 SPDX_DEPLOY_DIR ??= "${DEPLOY_DIR}/spdx"
 SPDX_TOPDIR ?= "${WORKDIR}/spdx_sstate_dir"
@@ -194,6 +193,17 @@ def get_cached_spdx( sstatefile ):
     cached_spdx_info=output.decode('utf-8').split(': ')
     return cached_spdx_info[1]
 
+def get_spdx_name(d):
+    pn = (d.getVar( 'PN') or "")
+    pv = (d.getVar( 'PKGV') or "").replace('-', '+')
+    pr = (d.getVar( 'PR') or "")
+
+    if pn.startswith('gcc-source'):
+        spdx_name = "gcc-" + pv + "-" + pr + ".spdx"
+    else:
+        spdx_name = pn + "-" + pv + "-" + pr + ".spdx"
+    return spdx_name
+
 #Find InfoInLicenseFile and fill into PackageLicenseInfoInLicenseFile.
 def find_infoinlicensefile(sstatefile):
     import subprocess
@@ -202,7 +212,7 @@ def find_infoinlicensefile(sstatefile):
 
     info_in_license_file = ""
     line_nums = []
-    key_words = ["NOTICE", "README", "readme", "COPYING", "LICENSE"]
+    key_words = ["NOTICE", "README", "readme", "COPYING", "LICENSE", "LICENCE"]
 
     for key_word in key_words:
         search_cmd = "grep -n 'FileName: .*" + key_word + "' " + sstatefile 
@@ -229,6 +239,8 @@ def find_infoinlicensefile(sstatefile):
             bb.note("Found COPYING file " + base_file_name)
         elif base_file_name.find("LICENSE")>=0:
             bb.note("Found LICENSE file: " + base_file_name)
+        elif base_file_name.find("LICENCE")>=0:
+            bb.note("Found LICENCE file: " + base_file_name)
         else:
             continue
         linecache.clearcache()
@@ -521,4 +533,105 @@ def get_spdxid_pkg(d):
         pid = d.getVar("PN")
     bb.note("SPDX ID of pkg = " + pid)
     return pid
+
+def get_licensefilelist_in_recipe(d):
+    """
+    Get the files of LIC_FILES_CHKSUM from recipe file.
+    """
+
+    lic_files_chksum = d.getVar('LIC_FILES_CHKSUM') or ""
+    pn = d.getVar('PN')
+    lic_files = []
+    for url in lic_files_chksum.split():
+        try:
+            (method, host, path, user, pswd, parm) = bb.fetch.decodeurl(url)
+            if method != "file" or not path:
+                raise bb.fetch.MalformedUrl()
+        except bb.fetch.MalformedUrl:
+            bb.fatal("%s: LIC_FILES_CHKSUM contains an invalid URL:  %s" % (d.getVar('PF'), url))
+        lic_files.append(path)
+    return lic_files
+
+def get_PackageLicenseInfo_from_spdx_file(spdx_filepath):
+    """
+    Get the PackageLicenseInfoInLicenseFile field from spdx file and return the data.
+    """
+
+    import re
+    import os
+
+    package_license_info = {}
+    spdx_content = ""
+
+    try:
+        with open(spdx_filepath, 'r', encoding='utf-8') as f:
+            spdx_content = f.read()
+    except Exception as e:
+        raise e
+
+    if not spdx_content:
+        return {}
+
+    regex_pattern = r"^PackageLicenseInfoInLicenseFile:\s*([^:]+?):\s*(.*)$"
+    matches = re.findall(regex_pattern, spdx_content, re.MULTILINE)
+    for filename, license_info in matches:
+        filename = filename.strip()
+        license_info = license_info.strip()
+
+        if filename not in package_license_info:
+            package_license_info[filename] = []
+        package_license_info[filename].append(license_info)
+
+    filtered_licenses = {}
+    for filename, raw_licenses_list in package_license_info.items():
+        non_noassertion_licenses = []
+        for lic_item in raw_licenses_list:
+            if lic_item != "NOASSERTION":
+                non_noassertion_licenses.append(lic_item)
+        
+        if non_noassertion_licenses:
+            filtered_licenses[filename] = list(set(non_noassertion_licenses)) 
+
+    return filtered_licenses
+
+
+def export_license_results_to_dot(d, spdx_file, recipe_lic_files, spdx_results):
+    """
+    Write the licens compare result to a pn-check-recipe-license.dot file.
+    """
+
+    import logging
+
+    logger = logging.getLogger("BitBake")
+    pn = d.getVar('PN')
+    licenses = d.getVar('LICENSE')
+    output_filepath = pn + "-check-recipe-license.dot"
+    extracted_data = get_PackageLicenseInfo_from_spdx_file(spdx_file)
+    try:
+        with open(output_filepath, 'w', encoding='utf-8') as outfile:
+            outfile.write("===================================================\n")
+            outfile.write("The license information in recipe\n")
+            outfile.write("    License files(LIC_FILES_CHKSUM):\n")
+            for lic in recipe_lic_files:
+                outfile.write(f"        {lic}\n")
+            outfile.write("    LICENSE:\n")
+            outfile.write(f"        {licenses}\n")
+            outfile.write("===================================================\n")
+            outfile.write("The scan result got from spdx file(the same files as recipe)\n")
+            for filename, licenses in spdx_results.items():
+                if licenses: 
+                    for license_name in licenses:
+                        outfile.write(f"    {filename}: {license_name}\n")
+            if len(extracted_data.items()) > len(recipe_lic_files):
+                outfile.write("===================================================\n")
+                outfile.write("According to spdx file, there are some other files that maybe include license information. Such as:\n")
+                for filename, licenses in extracted_data.items():
+                    if filename in recipe_lic_files:
+                       continue
+                    outfile.write(f"    {filename}: \n")
+                    for license_item in licenses:
+                        outfile.write(f"        {license_item}\n")
+    except Exception as e:
+        raise e
+    logger.warn("license checl result saved to '%s-check-recipe-license.dot'", pn)
 

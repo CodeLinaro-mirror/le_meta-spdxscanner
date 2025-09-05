@@ -94,13 +94,10 @@ python () {
                d.appendVarFlag('do_spdx', 'depends', ' %s:do_spdx_creat_tarball' % pn)
 
     spdx_outdir = d.getVar('SPDX_OUTDIR')
-    if pn.startswith('gcc-source'):
-        spdx_name = "gcc-" + info['pv'] + "-" + info['pr'] + ".spdx"
-    else:
-        spdx_name = info['pn'] + "-" + info['pv'] + "-" + info['pr'] + ".spdx"
+    spdx_name = get_spdx_name(d)
 
-    info['outfile'] = os.path.join(manifest_dir, spdx_name )
-    sstatefile = os.path.join(spdx_outdir, spdx_name )
+    info['outfile'] = os.path.join(manifest_dir, spdx_name)
+    sstatefile = os.path.join(spdx_outdir, spdx_name)
     if os.path.exists(info['outfile']):
         bb.note(info['pn'] + " spdx file has been exist, do nothing")
         return
@@ -648,18 +645,113 @@ python do_get_report(){
 }
 
 SSTATETASKS += "do_spdx"
+SSTATETASKS += "do_upload_recipe_source"
 python do_spdx_setscene () {
     sstate_setscene(d)
 }
 addtask do_spdx_setscene
 do_spdx () {
+    """
+    This task does nothing, only depends on get_report task.
+    """
+
     echo "Create spdx file."
 }
+
+do_upload_recipe_source () {
+    """
+    This task is used to upload code and then trigger a scan.
+    """
+
+    echo "Upload recipe source to fossology server."
+}
+
+python do_check_recipe_license(){
+    """
+    This task compares the license info of OSS in recipe files with the 
+    scanning results from fossology. Save the result to a pn-check-recipe-license.dot file.
+    """
+
+    import re
+    from typing import List, Dict, Optional
+
+    target_filenames_regex_list = []
+    spdx_outdir = d.getVar('SPDX_OUTDIR')
+    spdx_name = get_spdx_name(d)
+    manifest_dir = (d.getVar('SPDX_DEPLOY_DIR') or "")
+    spdx_file_path = os.path.join(manifest_dir, spdx_name)
+
+    def get_search_keywords():
+        target_filenames_keywords = []
+        lic_files_list = get_licensefilelist_in_recipe(d)
+        for url in lic_files_list:
+            line_spdx = url
+            target_filenames_keywords.append(line_spdx)
+        return target_filenames_keywords
+
+    target_filenames_regex_list = get_search_keywords()
+
+    def extract_licenses_from_spdx_multiple_files(spdx_filepath, target_filenames): 
+        results: Dict[str, List[str]] = {filename: [] for filename in target_filenames}
+        spdx_content = ""
+        
+        compiled_patterns = []
+
+        all_extracted_licenses = {}
+        license_info_pattern = r"^LicenseInfoInFile: (.+)$"
+        current_target_regex = None
+        current_extracted_licenses = []
+
+        for filename in target_filenames:
+            escaped_filename = re.escape(filename)
+        
+            final_regex_pattern = re.compile(
+            r"^.*?spdx_temp/sources/[^/]+/" + escaped_filename + r"$"
+            )
+            compiled_patterns.append((filename, final_regex_pattern))
+
+            compiled_patterns.append((filename, final_regex_pattern))
+        try:
+            with open(spdx_filepath, 'r', encoding='utf-8') as f:
+                spdx_content = f.read()
+        except Exception as e:
+            raise e
+        if not spdx_content:
+            return results
+
+        file_blocks = re.split(r'\n##File\n', spdx_content)
+
+        for block in file_blocks:
+            if not block.strip(): 
+                continue
+            
+            filename_match = re.search(r'FileName:\s*(.*)', block)
+            if filename_match:
+                current_full_filepath = filename_match.group(1).strip()
+                matched_original_filename = None
+                for original_filename, compiled_regex in compiled_patterns:
+                    if compiled_regex.fullmatch(current_full_filepath): 
+                        matched_original_filename = original_filename
+                        break
+
+                if matched_original_filename:
+                    license_info_matches = re.findall(r'LicenseInfoInFile:\s*(.*)', block)
+                    if license_info_matches:
+                        unique_licenses = list(set(lic.strip() for lic in license_info_matches))
+                        results[matched_original_filename].extend(unique_licenses)
+        return results
+
+    lic_files_in_spdx_result = extract_licenses_from_spdx_multiple_files(spdx_file_path, target_filenames_regex_list)
+    export_license_results_to_dot(d, spdx_file_path, target_filenames_regex_list, lic_files_in_spdx_result)
+}
+
 addtask do_spdx_creat_tarball after do_patch
 addtask do_foss_upload after do_spdx_creat_tarball 
 addtask do_schedule_jobs after do_foss_upload
 addtask do_get_report after do_schedule_jobs
 addtask do_spdx
+addtask do_upload_recipe_source after do_schedule_jobs
+addtask do_check_recipe_license after do_get_report 
 do_build[recrdeptask] += "do_spdx"
 do_populate_sdk[recrdeptask] += "do_spdx"
 do_get_report[depends] = "cve-update-nvd2-native:do_unpack"
