@@ -212,7 +212,7 @@ def find_infoinlicensefile(sstatefile):
 
     info_in_license_file = ""
     line_nums = []
-    key_words = ["NOTICE", "README", "readme", "COPYING", "LICENSE", "LICENCE"]
+    key_words = ["NOTICE", "README", "readme", "COPYING", "LICENSE", "LICENCE", "PKG-INFO", "copyright", "setup.py"]
 
     for key_word in key_words:
         search_cmd = "grep -n 'FileName: .*" + key_word + "' " + sstatefile 
@@ -241,6 +241,12 @@ def find_infoinlicensefile(sstatefile):
             bb.note("Found LICENSE file: " + base_file_name)
         elif base_file_name.find("LICENCE")>=0:
             bb.note("Found LICENCE file: " + base_file_name)
+        elif base_file_name.find("PKG-INFO")>=0:
+            bb.note("Found PKG-INFO file: " + base_file_name)
+        elif base_file_name.find("copyright")>=0:
+            bb.note("Found copyright file: " + base_file_name)
+        elif base_file_name.find("setup.py")>=0:
+            bb.note("Found setup.py file: " + base_file_name)
         else:
             continue
         linecache.clearcache()
