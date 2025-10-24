@@ -650,27 +650,19 @@ python do_spdx_setscene () {
     sstate_setscene(d)
 }
 addtask do_spdx_setscene
+#This task does nothing, only depends on get_report task.
 do_spdx () {
-    """
-    This task does nothing, only depends on get_report task.
-    """
-
     echo "Create spdx file."
 }
 
+#This task is used to upload code and then trigger a scan.
 do_upload_recipe_source () {
-    """
-    This task is used to upload code and then trigger a scan.
-    """
-
     echo "Upload recipe source to fossology server."
 }
 
+#This task compares the license info of OSS in recipe files with the
+#scanning results from fossology. Save the result to a pn-check-recipe-license.dot file.
 python do_check_recipe_license(){
-    """
-    This task compares the license info of OSS in recipe files with the 
-    scanning results from fossology. Save the result to a pn-check-recipe-license.dot file.
-    """
 
     import re
     from typing import List, Dict, Optional
