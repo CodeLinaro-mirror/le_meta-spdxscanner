@@ -209,20 +209,20 @@ def find_infoinlicensefile(sstatefile):
     import subprocess
     import linecache
     import re
-
     info_in_license_file = ""
     line_nums = []
-    key_words = ["NOTICE", "README", "readme", "COPYING", "LICENSE", "LICENCE", "PKG-INFO", "copyright", "setup.py"]
+    key_words = ["NOTICE", "README", "COPYING", "LICENSE", "LICENCE", "PKG-INFO", "copyright", "setup.py", "GPL", "LGPL", "MIT", "BSD"]
 
     for key_word in key_words:
-        search_cmd = "grep -n 'FileName: .*" + key_word + "' " + sstatefile 
+        search_cmd = "grep -in 'FileName: .*" + key_word + "' " + sstatefile 
         search_output = subprocess.Popen(search_cmd, shell=True, stdout=subprocess.PIPE).communicate()[0]
         bb.note("Search result: " + str(search_output))
         if search_output:
             bb.note("Found " + key_word +" file.")
             for line in search_output.decode('utf-8').splitlines():
                 num = line.split(":")[0]
-                line_nums.append(num)
+                if num not in line_nums:
+                    line_nums.append(num)
         else:
             bb.note("No license info files found.")
     for line_num in line_nums:
@@ -231,22 +231,28 @@ def find_infoinlicensefile(sstatefile):
         base_file_name = os.path.basename(file_path)
         if base_file_name.startswith("NOTICE"):
             bb.note("Found NOTICE file " + base_file_name)
-        elif base_file_name.startswith("readme"):
-            bb.note("Found readme file " + base_file_name)
-        elif base_file_name.startswith("README"):
+        elif base_file_name.lower().startswith("readme"):
             bb.note("Found README file " + base_file_name)
         elif base_file_name.find("COPYING")>=0:
             bb.note("Found COPYING file " + base_file_name)
-        elif base_file_name.find("LICENSE")>=0:
+        elif base_file_name.lower().find("copyright")>=0:
+            bb.note("Found copyright file " + base_file_name)
+        elif base_file_name.lower().find("license")>=0:
             bb.note("Found LICENSE file: " + base_file_name)
-        elif base_file_name.find("LICENCE")>=0:
+        elif base_file_name.lower().find("licence")>=0:
             bb.note("Found LICENCE file: " + base_file_name)
         elif base_file_name.find("PKG-INFO")>=0:
             bb.note("Found PKG-INFO file: " + base_file_name)
-        elif base_file_name.find("copyright")>=0:
-            bb.note("Found copyright file: " + base_file_name)
         elif base_file_name.find("setup.py")>=0:
             bb.note("Found setup.py file: " + base_file_name)
+        elif base_file_name.startswith("GPL"):
+            bb.note("Found GPL file " + base_file_name)
+        elif base_file_name.startswith("LGPL"):
+            bb.note("Found LGPL file " + base_file_name)
+        elif base_file_name.startswith("MIT"):
+            bb.note("Found MIT file " + base_file_name)
+        elif base_file_name.startswith("BSD"):
+            bb.note("Found BSD file " + base_file_name)
         else:
             continue
         linecache.clearcache()
