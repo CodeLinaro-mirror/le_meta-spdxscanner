@@ -630,20 +630,21 @@ def export_license_results_to_dot(d, spdx_file, recipe_lic_files, spdx_results):
             outfile.write(f"        {licenses}\n")
             outfile.write("===================================================\n")
             outfile.write("The scan result got from spdx file(the same files as recipe)\n")
-            for filename, licenses in spdx_results.items():
-                if licenses: 
-                    for license_name in licenses:
-                        outfile.write(f"    {filename}: {license_name}\n")
-            if len(extracted_data.items()) > len(recipe_lic_files):
-                outfile.write("===================================================\n")
-                outfile.write("According to spdx file, there are some other files that maybe include license information. Such as:\n")
-                for filename, licenses in extracted_data.items():
-                    if filename in recipe_lic_files:
-                       continue
-                    outfile.write(f"    {filename}: \n")
-                    for license_item in licenses:
-                        outfile.write(f"        {license_item}\n")
+            for filename, licenses in extracted_data.items():
+                if filename not in recipe_lic_files:
+                    continue
+                outfile.write(f"    {filename}: \n")
+                for license_item in licenses:
+                    outfile.write(f"        {license_item}\n")
+            outfile.write("===================================================\n")
+            outfile.write("According to spdx file, there are some other files that maybe include license information. Such as:\n")
+            for filename, licenses in extracted_data.items():
+                if filename in recipe_lic_files:
+                    continue
+                outfile.write(f"    {filename}: \n")
+                for license_item in licenses:
+                    outfile.write(f"        {license_item}\n")
     except Exception as e:
         raise e
-    logger.warn("license checl result saved to '%s-check-recipe-license.dot'", pn)
+    logger.warn("license check result saved to '%s-check-recipe-license.dot'", pn)
 
