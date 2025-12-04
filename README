@@ -202,7 +202,7 @@ build by bitbake. For example:
     (Only supported by fossology-python.bbclass now.)
 ```
     $ bitbake openssl -f -c  do_upload_recipe_source
-    $ bitbake openssl -f -c  do_upload_recipe_source
+    $ bitbake openssl -f -c  do_check_recipe_license
 ```
 Maintenance
 ======================================
