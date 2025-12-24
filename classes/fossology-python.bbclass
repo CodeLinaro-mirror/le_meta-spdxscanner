@@ -672,6 +672,10 @@ python do_check_recipe_license(){
     spdx_name = get_spdx_name(d)
     manifest_dir = (d.getVar('SPDX_DEPLOY_DIR') or "")
     spdx_file_path = os.path.join(manifest_dir, spdx_name)
+    #Sometimes, S is re-defined, so, find the correct path of files.
+    s_abs_path = d.getVar('S')
+    unpackdir_abs_path = d.getVar('UNPACKDIR')
+    s_relative_to_unpackdir = os.path.relpath(s_abs_path, unpackdir_abs_path)
 
     def get_search_keywords():
         target_filenames_keywords = []
@@ -693,15 +697,16 @@ python do_check_recipe_license(){
         license_info_pattern = r"^LicenseInfoInFile: (.+)$"
         current_target_regex = None
         current_extracted_licenses = []
+        if s_relative_to_unpackdir == "." or s_relative_to_unpackdir == "":
+            pattern_segment = ""
+        else:
+            pattern_segment = re.escape(s_relative_to_unpackdir) + "/"
 
         for filename in target_filenames:
             escaped_filename = re.escape(filename)
-        
             final_regex_pattern = re.compile(
-            r"^.*?spdx_temp/sources/[^/]+/" + escaped_filename + r"$"
+            r"^.*?spdx_temp/sources/" + pattern_segment + escaped_filename + r"$"
             )
-            compiled_patterns.append((filename, final_regex_pattern))
-
             compiled_patterns.append((filename, final_regex_pattern))
         try:
             with open(spdx_filepath, 'r', encoding='utf-8') as f:
@@ -722,7 +727,7 @@ python do_check_recipe_license(){
                 current_full_filepath = filename_match.group(1).strip()
                 matched_original_filename = None
                 for original_filename, compiled_regex in compiled_patterns:
-                    if compiled_regex.fullmatch(current_full_filepath): 
+                    if compiled_regex.fullmatch(current_full_filepath):
                         matched_original_filename = original_filename
                         break
 

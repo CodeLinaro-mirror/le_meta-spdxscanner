@@ -592,19 +592,15 @@ def get_PackageLicenseInfo_from_spdx_file(spdx_filepath):
 
         if filename not in package_license_info:
             package_license_info[filename] = []
-        package_license_info[filename].append(license_info)
+        if license_info != "NOASSERTION":
+            package_license_info[filename].append(license_info)
+        filtered_output = {
+            filename: list(set(licenses_list))
+            for filename, licenses_list in package_license_info.items()
+            if licenses_list
+        }
 
-    filtered_licenses = {}
-    for filename, raw_licenses_list in package_license_info.items():
-        non_noassertion_licenses = []
-        for lic_item in raw_licenses_list:
-            if lic_item != "NOASSERTION":
-                non_noassertion_licenses.append(lic_item)
-        
-        if non_noassertion_licenses:
-            filtered_licenses[filename] = list(set(non_noassertion_licenses)) 
-
-    return filtered_licenses
+    return filtered_output
 
 
 def export_license_results_to_dot(d, spdx_file, recipe_lic_files, spdx_results):
@@ -630,7 +626,7 @@ def export_license_results_to_dot(d, spdx_file, recipe_lic_files, spdx_results):
             outfile.write(f"        {licenses}\n")
             outfile.write("===================================================\n")
             outfile.write("The scan result got from spdx file(the same files as recipe)\n")
-            for filename, licenses in extracted_data.items():
+            for filename, licenses in spdx_results.items():
                 if filename not in recipe_lic_files:
                     continue
                 outfile.write(f"    {filename}: \n")
