@@ -674,9 +674,8 @@ python do_check_recipe_license(){
     spdx_file_path = os.path.join(manifest_dir, spdx_name)
     #Sometimes, S is re-defined, so, find the correct path of files.
     s_abs_path = d.getVar('S')
-    unpackdir_abs_path = d.getVar('UNPACKDIR')
+    unpackdir_abs_path = d.getVar('WORKDIR')
     s_relative_to_unpackdir = os.path.relpath(s_abs_path, unpackdir_abs_path)
-
     def get_search_keywords():
         target_filenames_keywords = []
         lic_files_list = get_licensefilelist_in_recipe(d)
@@ -701,12 +700,13 @@ python do_check_recipe_license(){
             pattern_segment = ""
         else:
             pattern_segment = re.escape(s_relative_to_unpackdir) + "/"
-
         for filename in target_filenames:
-            escaped_filename = re.escape(filename)
+            target_file_path = pattern_segment + filename
+            escaped_filename = os.path.normpath(target_file_path) 
             final_regex_pattern = re.compile(
-            r"^.*?spdx_temp/sources/" + pattern_segment + escaped_filename + r"$"
+            r"^.*?spdx_temp/" + escaped_filename + r"$"
             )
+            bb.note("****** ^.*?spdx_temp/" + escaped_filename + r"$" )
             compiled_patterns.append((filename, final_regex_pattern))
         try:
             with open(spdx_filepath, 'r', encoding='utf-8') as f:
