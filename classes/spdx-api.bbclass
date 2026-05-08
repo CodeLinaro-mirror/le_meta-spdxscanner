@@ -13,8 +13,6 @@ do_spdx[dirs] = "${WORKDIR}"
 
 LICENSELISTVERSION = "2.6"
 
-CVE_CHECK_DB_DLDIR_FILE ?= "${DL_DIR}/CVE_CHECK2/${CVE_CHECK_DB_FILENAME}"
-
 # If ${S} isn't actually the top-level source directory, set SPDX_S to point at
 # the real top-level directory.
 SPDX_S ?= "${S}"
@@ -271,16 +269,19 @@ def find_infoinlicensefile(sstatefile):
             bb.note("file path = " + file_path)
             file_path = file_path.split("\n")[0]
             bb.note("file path = " + file_path)
-            path_list = file_path.split('/')
-            if len(file_path.split('/')) < 3:
-                file_path_simple = file_path.split('/',1)[1]
-            elif len(file_path.split('/')) < 4:
-                file_path_simple = file_path.split('/',2)[2]
-            elif len(file_path.split('/')) < 5:
-                file_path_simple = file_path.split('/',3)[3]
-            else:
-                file_path_simple = file_path.split('/',4)[4]
+            # It splits the path into components and handles all cases correctly.
+            path_components = file_path.split('/')
             
+            # Determine how many path components to keep at the end.
+            # A safe approach is to just keep the last, say, 2 or 3 components, 
+            # or the whole path if it's shorter. Let's aim to keep the last 3.
+            
+            num_components_to_keep = 3 
+            if len(path_components) > num_components_to_keep:
+                file_path_simple = '/'.join(path_components[-num_components_to_keep:])
+            else:
+                file_path_simple = file_path # If path is short, keep it as is.
+ 
             #license_in_file = file_path + ": " + license
             license_in_file = "%s%s%s%s" % ("PackageLicenseInfoInLicenseFile: ",file_path_simple,": ",license)
             license_in_file.replace('\n', '').replace('\r', '')
@@ -472,43 +473,100 @@ python do_spdx_get_src(){
     bb.note("temp_dir = " + spdx_temp_dir)
 }
 
-#For SPDX2.3
+# This function retrieves both CVEs and PURL into a single "externalRefs" section.
+# It uses the SPDX_PACKAGE_URLS variable directly, which is simpler and more robust
+# than parsing a generated JSON file.
 def get_external_refs(d):
-    import shutil
-    from oe.cve_check import get_patched_cves
-    external_refs = "##------------------------- \n"
-    external_refs += "## Security Information \n"
-    external_refs += "##------------------------- \n"
-    external_refs += "\"externalRefs\" : ["
-    unpatched_cves = []
-    if not os.path.exists(d.getVar("CVE_CHECK_DB_FILE")):
-        shutil.copyfile(d.getVar("CVE_CHECK_DB_DLDIR_FILE"), d.getVar("CVE_CHECK_DB_FILE"))
-    try:
-        patched_cves = get_patched_cves(d)
-    except FileNotFoundError:
-        bb.fatal("Failure in searching patches")
-    cve_data, status = check_cves(d, patched_cves)
+    import os
+    import json
+    import bb 
+
+    pn = d.getVar("PN")
+    deploy_dir = d.getVar("DEPLOY_DIR_IMAGE")
     
-    if len(cve_data) or (d.getVar("CVE_CHECK_COVERAGE") == "1" and status):
-        get_cve_info(d, cve_data)
+    # This list will hold all reference blocks (CVEs, PURL, etc.)
+    ref_blocks = []
 
-        for cve in sorted(cve_data):
-            status = "unpatched"
-            if cve_data[cve]["abbrev-status"] == "Ignored":
-                status = "ignored"
-            elif cve_data[cve]["abbrev-status"] == "Patched" :
-                status = "fix"
-            else:
-                # default value of status is Unpatched
-                unpatched_cves.append(cve)
-            external_refs += "{\n"
-            external_refs += "\"referenceCategory\" : \"SECURITY\",\n"
-            external_refs += "\"referenceLocator\" : \"https://nvd.nist.gov/vuln/detail/%s\",\n" % cve
-            external_refs += "\"referenceType\" : \"%s\"\n" % status
-            external_refs += "},"
+    # =================================================================
+    # Part 1: Get CVE information (logic remains the same)
+    # =================================================================
+    cve_json_filename = f"{pn}-recipe-sbom.sbom-cve-check.yocto.json"
+    cve_json_path = os.path.join(deploy_dir, cve_json_filename)
 
-        external_refs += "]"
-        return external_refs
+    if os.path.exists(cve_json_path):
+        try:
+            with open(cve_json_path, 'r', encoding='utf-8') as f:
+                cve_data = json.load(f)
+
+            cve_issues = []
+            for pkg_info in cve_data.get('package', []):
+                if pkg_info.get('name') == pn:
+                    cve_issues = pkg_info.get('issue', [])
+                    break
+            
+            for issue in sorted(cve_issues, key=lambda i: i.get('id', '')):
+                cve_id = issue.get('id')
+                if not cve_id: continue
+                status = issue.get('status', 'Unknown')
+                link = issue.get('link', f"https://nvd.nist.gov/vuln/detail/{cve_id}")
+                detail = issue.get('detail', '')
+                detail_json_str = json.dumps(detail)
+                
+                cve_block = (
+                    f'{{\n'
+                    f'"referenceCategory" : "SECURITY",\n'
+                    f'"referenceLocator" : "{link}",\n'
+                    f'"referenceType" : "{status}",\n'
+                    f'"referenceComment" : {detail_json_str}\n'
+                    f'}}'
+                )
+                ref_blocks.append(cve_block)
+
+        except (json.JSONDecodeError, IOError) as e:
+            bb.error(f"SPDX-Scanner: Failed to read/parse CVE file {cve_json_path}: {e}")
+
+    # =================================================================
+    # Part 2: Get PURL information (NEW, SIMPLIFIED LOGIC)
+    # =================================================================
+    # Get the value of the variable directly from the datastore. No file I/O needed!
+    purls_str = d.getVar("SPDX_PACKAGE_URLS")
+
+    if purls_str:
+        # The variable can contain multiple space-separated PURLs.
+        purl_list = purls_str.split()
+        
+        for purl_string in purl_list:
+            if not purl_string: # Skip empty strings if there are multiple spaces
+                continue
+            
+            purl_block = (
+                f'{{\n'
+                f'"referenceCategory" : "PACKAGE-MANAGER",\n'
+                f'"referenceType" : "purl",\n'
+                f'"referenceLocator" : "{purl_string}"\n'
+                f'}}'
+            )
+            ref_blocks.append(purl_block)
+    else:
+        bb.warn(f"SPDX-Scanner: SPDX_PACKAGE_URLS variable is not set for {pn}")
+
+    # =================================================================
+    # Part 3: Format the final output string (logic remains the same)
+    # =================================================================
+    if not ref_blocks:
+        return ""
+
+    ref_blocks.sort(key=lambda b: ('"referenceCategory" : "SECURITY"' not in b))
+
+    header = "##------------------------- \n"
+    header += "## External References (CVE, PURL, etc.)\n"
+    header += "##------------------------- \n"
+    
+    body = "\"externalRefs\" : [\n"
+    body += ",\n".join(ref_blocks)
+    body += "\n]"
+    
+    return header + body
 
 def get_pkgpurpose(d):
     section = d.getVar("SECTION")

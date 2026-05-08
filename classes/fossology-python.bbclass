@@ -565,6 +565,8 @@ python do_get_report(){
     info['package_static_link'] = (d.getVar('STATIC_LINK') or "")
     info['modified'] = "false"
     info['external_refs'] = get_external_refs(d)
+    bb.note("external_refs info: ")
+    bb.note(info['external_refs'] )
     info['purpose'] = get_pkgpurpose(d)
     info['release_date'] = (d.getVar('REALASE_DATE') or "")
     info['build_time'] = get_build_date(d)
@@ -751,4 +753,5 @@ addtask do_upload_recipe_source after do_schedule_jobs
 addtask do_check_recipe_license after do_get_report 
 do_build[recrdeptask] += "do_spdx"
 do_populate_sdk[recrdeptask] += "do_spdx"
-do_get_report[depends] = "cve-update-nvd2-native:do_unpack"
+do_get_report[recrdeptask] += "do_sbom_cve_check_recipe"
+
